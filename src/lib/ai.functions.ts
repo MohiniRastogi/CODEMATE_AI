@@ -85,12 +85,21 @@ async function runStructured<T extends z.ZodTypeAny>(
     return output as z.infer<T>;
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
+      const raw = error.text ?? "";
+      const cleaned = raw
+        .replace(/^\s*```(?:json)?\s*/i, "")
+        .replace(/\s*```\s*$/i, "")
+        .trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      const candidate = match ? match[0] : cleaned;
       try {
-        return JSON.parse(error.text ?? "{}") as z.infer<T>;
+        return JSON.parse(candidate) as z.infer<T>;
       } catch {
+        console.error("[runStructured] Failed to parse AI response:", raw);
         throw new Error("AI returned an invalid response. Please try again.");
       }
     }
+    console.error("[runStructured] AI call failed:", error);
     throw error;
   }
 }
