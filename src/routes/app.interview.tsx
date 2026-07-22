@@ -92,16 +92,15 @@ function InterviewPage() {
               {result.answer}
             </p>
           </SectionCard>
-          {result.examples.length > 0 && (
-            <SectionCard title="Examples">
-              <ul className="space-y-2">
-                {(result.examples ?? []).map((e, i) => (
-                  <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
-                    {e}
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
+          <SectionCard title="Examples">
+            <ul className="space-y-2">
+              {(result.examples ?? []).map((e, i) => (
+                <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
+                  {e}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
             <SectionCard title="Tips">
               <ul className="space-y-1.5 text-sm text-foreground">
                 {(result.tips ?? []).map((t, i) => (
