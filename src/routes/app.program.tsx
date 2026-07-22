@@ -1,5 +1,5 @@
-import { createFileRoute, useServerFn } from "@tanstack/react-start";
-import { createFileRoute as _fr } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Code2, Save, Share2, RefreshCw, Sparkles } from "lucide-react";
 import { useState } from "react";

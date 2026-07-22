@@ -13,6 +13,16 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppSavedRouteImport } from './routes/app.saved'
+import { Route as AppReviewRouteImport } from './routes/app.review'
+import { Route as AppProjectRouteImport } from './routes/app.project'
+import { Route as AppProgramRouteImport } from './routes/app.program'
+import { Route as AppNotesRouteImport } from './routes/app.notes'
+import { Route as AppInterviewRouteImport } from './routes/app.interview'
+import { Route as AppHistoryRouteImport } from './routes/app.history'
+import { Route as AppConvertRouteImport } from './routes/app.convert'
+import { Route as AppChallengeRouteImport } from './routes/app.challenge'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -34,16 +44,86 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSavedRoute = AppSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReviewRoute = AppReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectRoute = AppProjectRouteImport.update({
+  id: '/project',
+  path: '/project',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProgramRoute = AppProgramRouteImport.update({
+  id: '/program',
+  path: '/program',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotesRoute = AppNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInterviewRoute = AppInterviewRouteImport.update({
+  id: '/interview',
+  path: '/interview',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConvertRoute = AppConvertRouteImport.update({
+  id: '/convert',
+  path: '/convert',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChallengeRoute = AppChallengeRouteImport.update({
+  id: '/challenge',
+  path: '/challenge',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/app/challenge': typeof AppChallengeRoute
+  '/app/convert': typeof AppConvertRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/interview': typeof AppInterviewRoute
+  '/app/notes': typeof AppNotesRoute
+  '/app/program': typeof AppProgramRoute
+  '/app/project': typeof AppProjectRoute
+  '/app/review': typeof AppReviewRoute
+  '/app/saved': typeof AppSavedRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/app/challenge': typeof AppChallengeRoute
+  '/app/convert': typeof AppConvertRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/interview': typeof AppInterviewRoute
+  '/app/notes': typeof AppNotesRoute
+  '/app/program': typeof AppProgramRoute
+  '/app/project': typeof AppProjectRoute
+  '/app/review': typeof AppReviewRoute
+  '/app/saved': typeof AppSavedRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -51,14 +131,66 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/app/challenge': typeof AppChallengeRoute
+  '/app/convert': typeof AppConvertRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/interview': typeof AppInterviewRoute
+  '/app/notes': typeof AppNotesRoute
+  '/app/program': typeof AppProgramRoute
+  '/app/project': typeof AppProjectRoute
+  '/app/review': typeof AppReviewRoute
+  '/app/saved': typeof AppSavedRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/onboarding' | '/app/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/onboarding'
+    | '/app/challenge'
+    | '/app/convert'
+    | '/app/history'
+    | '/app/interview'
+    | '/app/notes'
+    | '/app/program'
+    | '/app/project'
+    | '/app/review'
+    | '/app/saved'
+    | '/app/settings'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/onboarding' | '/app'
-  id: '__root__' | '/' | '/app' | '/onboarding' | '/app/'
+  to:
+    | '/'
+    | '/onboarding'
+    | '/app/challenge'
+    | '/app/convert'
+    | '/app/history'
+    | '/app/interview'
+    | '/app/notes'
+    | '/app/program'
+    | '/app/project'
+    | '/app/review'
+    | '/app/saved'
+    | '/app/settings'
+    | '/app'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/onboarding'
+    | '/app/challenge'
+    | '/app/convert'
+    | '/app/history'
+    | '/app/interview'
+    | '/app/notes'
+    | '/app/program'
+    | '/app/project'
+    | '/app/review'
+    | '/app/saved'
+    | '/app/settings'
+    | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -97,14 +229,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/saved': {
+      id: '/app/saved'
+      path: '/saved'
+      fullPath: '/app/saved'
+      preLoaderRoute: typeof AppSavedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/review': {
+      id: '/app/review'
+      path: '/review'
+      fullPath: '/app/review'
+      preLoaderRoute: typeof AppReviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/project': {
+      id: '/app/project'
+      path: '/project'
+      fullPath: '/app/project'
+      preLoaderRoute: typeof AppProjectRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/program': {
+      id: '/app/program'
+      path: '/program'
+      fullPath: '/app/program'
+      preLoaderRoute: typeof AppProgramRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notes': {
+      id: '/app/notes'
+      path: '/notes'
+      fullPath: '/app/notes'
+      preLoaderRoute: typeof AppNotesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/interview': {
+      id: '/app/interview'
+      path: '/interview'
+      fullPath: '/app/interview'
+      preLoaderRoute: typeof AppInterviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/convert': {
+      id: '/app/convert'
+      path: '/convert'
+      fullPath: '/app/convert'
+      preLoaderRoute: typeof AppConvertRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/challenge': {
+      id: '/app/challenge'
+      path: '/challenge'
+      fullPath: '/app/challenge'
+      preLoaderRoute: typeof AppChallengeRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppChallengeRoute: typeof AppChallengeRoute
+  AppConvertRoute: typeof AppConvertRoute
+  AppHistoryRoute: typeof AppHistoryRoute
+  AppInterviewRoute: typeof AppInterviewRoute
+  AppNotesRoute: typeof AppNotesRoute
+  AppProgramRoute: typeof AppProgramRoute
+  AppProjectRoute: typeof AppProjectRoute
+  AppReviewRoute: typeof AppReviewRoute
+  AppSavedRoute: typeof AppSavedRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppChallengeRoute: AppChallengeRoute,
+  AppConvertRoute: AppConvertRoute,
+  AppHistoryRoute: AppHistoryRoute,
+  AppInterviewRoute: AppInterviewRoute,
+  AppNotesRoute: AppNotesRoute,
+  AppProgramRoute: AppProgramRoute,
+  AppProjectRoute: AppProjectRoute,
+  AppReviewRoute: AppReviewRoute,
+  AppSavedRoute: AppSavedRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
