@@ -95,24 +95,23 @@ function InterviewPage() {
           {result.examples.length > 0 && (
             <SectionCard title="Examples">
               <ul className="space-y-2">
-                {result.examples.map((e, i) => (
+                {(result.examples ?? []).map((e, i) => (
                   <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
                     {e}
                   </li>
                 ))}
               </ul>
             </SectionCard>
-          )}
-          <SectionCard title="Interview Tips">
-            <ul className="space-y-1.5 text-sm text-foreground">
-              {result.tips.map((t, i) => (
-                <li key={i}>💡 {t}</li>
-              ))}
-            </ul>
-          </SectionCard>
-          <SectionCard title="Follow-ups">
-            <ul className="space-y-2">
-              {result.followUps.map((f, i) => (
+            <SectionCard title="Tips">
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {(result.tips ?? []).map((t, i) => (
+                  <li key={i}>💡 {t}</li>
+                ))}
+              </ul>
+            </SectionCard>
+            <SectionCard title="Follow-up Questions">
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {(result.followUps ?? []).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
                   {f}
