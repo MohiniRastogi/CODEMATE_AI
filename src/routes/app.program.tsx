@@ -14,7 +14,7 @@ import {
 } from "@/components/FeatureShell";
 import { CodeBlock } from "@/components/CodeBlock";
 
-export const Route = _fr("/app/program")({
+export const Route = createFileRoute("/app/program")({
   head: () => ({
     meta: [
       { title: "Program Generator — CodeMateAI" },
