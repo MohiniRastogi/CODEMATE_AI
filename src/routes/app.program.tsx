@@ -200,6 +200,3 @@ function ActionButton({
     </button>
   );
 }
-
-// Silence unused warning
-export { createFileRoute as __unused };
