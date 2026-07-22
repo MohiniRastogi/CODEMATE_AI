@@ -99,7 +99,7 @@ function ProjectPage() {
           </SectionCard>
           <SectionCard title="Dependencies">
             <div className="flex flex-wrap gap-2">
-              {result.dependencies.map((d) => (
+              {(result.dependencies ?? []).map((d) => (
                 <span
                   key={d}
                   className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
@@ -114,7 +114,7 @@ function ProjectPage() {
           </SectionCard>
           <SectionCard title="Future Scope">
             <ul className="space-y-2">
-              {result.futureScope.map((f, i) => (
+              {(result.futureScope ?? []).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-primary">→</span>
                   {f}

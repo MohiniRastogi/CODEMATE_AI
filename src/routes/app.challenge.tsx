@@ -81,7 +81,7 @@ function ChallengePage() {
 
           <SectionCard title="Hints">
             <div className="space-y-2">
-              {result.hints.map((h, i) => (
+              {(result.hints ?? []).map((h, i) => (
                 <details key={i} className="rounded-xl border border-border bg-background p-3">
                   <summary className="cursor-pointer text-sm font-medium text-primary">
                     Hint {i + 1}

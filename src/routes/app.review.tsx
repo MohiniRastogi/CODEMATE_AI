@@ -90,7 +90,7 @@ function ReviewPage() {
           {result.bugs.length > 0 && (
             <SectionCard title="Bugs">
               <ul className="space-y-2">
-                {result.bugs.map((b, i) => (
+                {(result.bugs ?? []).map((b, i) => (
                   <li key={i} className="flex gap-2 rounded-xl bg-danger/10 p-3 text-sm text-foreground">
                     <span className="text-danger">🐛</span>
                     {b}
@@ -102,7 +102,7 @@ function ReviewPage() {
 
           <SectionCard title="Suggestions">
             <ul className="space-y-2">
-              {result.suggestions.map((s, i) => (
+              {(result.suggestions ?? []).map((s, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-success">✓</span>
                   {s}
