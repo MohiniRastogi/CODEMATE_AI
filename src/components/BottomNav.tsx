@@ -2,12 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { Home, History, Bookmark, Settings } from "lucide-react";
 
 export function BottomNav() {
-  const items = [
+  const items: Array<{
+    to: "/app" | "/app/history" | "/app/saved" | "/app/settings";
+    label: string;
+    icon: typeof Home;
+    exact?: boolean;
+  }> = [
     { to: "/app", label: "Home", icon: Home, exact: true },
     { to: "/app/history", label: "History", icon: History },
     { to: "/app/saved", label: "Saved", icon: Bookmark },
     { to: "/app/settings", label: "Settings", icon: Settings },
-  ] as const;
+  ];
 
   return (
     <nav
