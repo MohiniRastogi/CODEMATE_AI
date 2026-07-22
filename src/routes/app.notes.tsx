@@ -1,0 +1,176 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
+import { BookOpen, Sparkles, Save, FileDown, Copy } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { generateNotes } from "@/lib/ai.functions";
+import { storage } from "@/lib/storage";
+import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+
+export const Route = createFileRoute("/app/notes")({
+  head: () => ({
+    meta: [
+      { title: "Notes Generator — CodeMateAI" },
+      {
+        name: "description",
+        content: "Generate detailed study notes with examples, MCQs and interview questions on any topic.",
+      },
+    ],
+  }),
+  component: NotesPage,
+});
+
+function NotesPage() {
+  const [topic, setTopic] = useState("");
+  const fn = useServerFn(generateNotes);
+  const mutation = useMutation({
+    mutationFn: (input: { topic: string }) => fn({ data: input }),
+    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (data) => storage.addHistory({ kind: "notes", title: topic, data }),
+  });
+
+  const result = mutation.data;
+
+  return (
+    <FeatureShell
+      title="Notes Generator"
+      subtitle="Deep-dive study notes on demand"
+      icon={BookOpen}
+      gradient="gradient-orange"
+    >
+      <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-subtitle">Topic</span>
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Binary Search Tree"
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          />
+        </label>
+        <div className="mt-4">
+          <GradientButton
+            gradient="gradient-orange"
+            onClick={() => (topic.trim() ? mutation.mutate({ topic }) : toast.error("Enter a topic"))}
+            disabled={mutation.isPending}
+          >
+            <Sparkles className="h-4 w-4" />
+            {mutation.isPending ? "Writing notes..." : "Generate Notes"}
+          </GradientButton>
+        </div>
+      </div>
+
+      {mutation.isPending && (
+        <div className="mt-5">
+          <LoadingShimmer lines={12} />
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-5 space-y-4">
+          <SectionCard title="Definition">
+            <p className="text-sm leading-relaxed text-foreground">{result.definition}</p>
+          </SectionCard>
+          <SectionCard title="Explanation">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {result.explanation}
+            </p>
+          </SectionCard>
+          <SectionCard title="Examples">
+            <ul className="space-y-2">
+              {result.examples.map((e, i) => (
+                <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
+                  {e}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SectionCard title="Advantages">
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {result.advantages.map((a, i) => (
+                  <li key={i}>✓ {a}</li>
+                ))}
+              </ul>
+            </SectionCard>
+            <SectionCard title="Disadvantages">
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {result.disadvantages.map((a, i) => (
+                  <li key={i}>✗ {a}</li>
+                ))}
+              </ul>
+            </SectionCard>
+          </div>
+          <SectionCard title="Interview Questions">
+            <div className="space-y-3">
+              {result.interviewQuestions.map((qa, i) => (
+                <details key={i} className="rounded-xl border border-border bg-background p-3">
+                  <summary className="cursor-pointer text-sm font-medium text-foreground">
+                    Q{i + 1}. {qa.q}
+                  </summary>
+                  <p className="mt-2 text-sm text-subtitle">{qa.a}</p>
+                </details>
+              ))}
+            </div>
+          </SectionCard>
+          <SectionCard title="MCQs">
+            <div className="space-y-4">
+              {result.mcqs.map((m, i) => (
+                <div key={i} className="rounded-xl border border-border p-3">
+                  <p className="text-sm font-medium text-foreground">
+                    {i + 1}. {m.question}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {m.options.map((o) => (
+                      <li key={o} className="text-sm text-subtitle">
+                        • {o}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs font-semibold text-success">Answer: {m.answer}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+          <SectionCard title="Summary">
+            <p className="text-sm leading-relaxed text-foreground">{result.summary}</p>
+          </SectionCard>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+                toast.success("Copied");
+              }}
+              className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-foreground shadow-soft"
+            >
+              <Copy className="h-4 w-4 text-primary" />
+              Copy
+            </button>
+            <button
+              onClick={() => {
+                storage.addBookmark({ kind: "notes", title: topic, data: result });
+                toast.success("Saved");
+              }}
+              className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-foreground shadow-soft"
+            >
+              <Save className="h-4 w-4 text-primary" />
+              Save
+            </button>
+            <button
+              disabled
+              className="relative flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-subtitle shadow-soft opacity-60"
+            >
+              <FileDown className="h-4 w-4" />
+              PDF
+              <span className="absolute -top-2 right-2 rounded-full gradient-orange px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                Soon
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+    </FeatureShell>
+  );
+}
