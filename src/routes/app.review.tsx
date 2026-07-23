@@ -87,7 +87,7 @@ function ReviewPage() {
             </div>
           </SectionCard>
 
-          {result.bugs.length > 0 && (
+          {(result.bugs ?? []).length > 0 && (
             <SectionCard title="Bugs">
               <ul className="space-y-2">
                 {(result.bugs ?? []).map((b, i) => (
