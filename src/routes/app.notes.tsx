@@ -149,75 +149,112 @@ function NotesPage() {
         </div>
       )}
 
+      {mutation.isError && !mutation.isPending && (
+        <div className="mt-5 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-foreground">
+          <p className="font-medium">Something went wrong.</p>
+          <p className="mt-1 text-subtitle">{mutation.error?.message ?? "Please try again."}</p>
+          <button
+            onClick={() => topic.trim() && mutation.mutate({ topic })}
+            className="mt-3 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {result && (
         <div className="mt-5 space-y-4">
-          <SectionCard title="Definition">
-            <p className="text-sm leading-relaxed text-foreground">{result.definition}</p>
-          </SectionCard>
-          <SectionCard title="Explanation">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {result.explanation}
-            </p>
-          </SectionCard>
-          <SectionCard title="Examples">
-            <ul className="space-y-2">
-              {(result.examples ?? []).map((e, i) => (
-                <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
-                  {e}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
+          {result.definition && (
+            <SectionCard title="Definition">
+              <p className="text-sm leading-relaxed text-foreground">{toText(result.definition)}</p>
+            </SectionCard>
+          )}
+          {result.explanation && (
+            <SectionCard title="Explanation">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {toText(result.explanation)}
+              </p>
+            </SectionCard>
+          )}
+          {(result.examples ?? []).length > 0 && (
+            <SectionCard title="Examples">
+              <ul className="space-y-3">
+                {(result.examples ?? []).map((e, i) => (
+                  <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
+                    <SafeValue value={e} />
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <SectionCard title="Advantages">
-              <ul className="space-y-1.5 text-sm text-foreground">
-                {(result.advantages ?? []).map((a, i) => (
-                  <li key={i}>✓ {a}</li>
-                ))}
-              </ul>
-            </SectionCard>
-            <SectionCard title="Disadvantages">
-              <ul className="space-y-1.5 text-sm text-foreground">
-                {(result.disadvantages ?? []).map((a, i) => (
-                  <li key={i}>✗ {a}</li>
-                ))}
-              </ul>
-            </SectionCard>
+            {(result.advantages ?? []).length > 0 && (
+              <SectionCard title="Advantages">
+                <ul className="space-y-1.5 text-sm text-foreground">
+                  {(result.advantages ?? []).map((a, i) => (
+                    <li key={i}>✓ {toText(a)}</li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
+            {(result.disadvantages ?? []).length > 0 && (
+              <SectionCard title="Disadvantages">
+                <ul className="space-y-1.5 text-sm text-foreground">
+                  {(result.disadvantages ?? []).map((a, i) => (
+                    <li key={i}>✗ {toText(a)}</li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
           </div>
-          <SectionCard title="Interview Questions">
-            <div className="space-y-3">
-              {(result.interviewQuestions ?? []).map((qa, i) => (
-                <details key={i} className="rounded-xl border border-border bg-background p-3">
-                  <summary className="cursor-pointer text-sm font-medium text-foreground">
-                    Q{i + 1}. {qa.q}
-                  </summary>
-                  <p className="mt-2 text-sm text-subtitle">{qa.a}</p>
-                </details>
-              ))}
-            </div>
-          </SectionCard>
-          <SectionCard title="MCQs">
-            <div className="space-y-4">
-              {(result.mcqs ?? []).map((m, i) => (
-                <div key={i} className="rounded-xl border border-border p-3">
-                  <p className="text-sm font-medium text-foreground">
-                    {i + 1}. {m.question}
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {(m.options ?? []).map((o) => (
-                      <li key={o} className="text-sm text-subtitle">
-                        • {o}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-xs font-semibold text-success">Answer: {m.answer}</p>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-          <SectionCard title="Summary">
-            <p className="text-sm leading-relaxed text-foreground">{result.summary}</p>
-          </SectionCard>
+          {(result.interviewQuestions ?? []).length > 0 && (
+            <SectionCard title="Interview Questions">
+              <div className="space-y-3">
+                {(result.interviewQuestions ?? []).map((qa, i) => {
+                  const q = toText((qa as { q?: unknown })?.q ?? qa);
+                  const a = toText((qa as { a?: unknown })?.a);
+                  return (
+                    <details key={i} className="rounded-xl border border-border bg-background p-3">
+                      <summary className="cursor-pointer text-sm font-medium text-foreground">
+                        Q{i + 1}. {q}
+                      </summary>
+                      {a && <p className="mt-2 text-sm text-subtitle">{a}</p>}
+                    </details>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
+          {(result.mcqs ?? []).length > 0 && (
+            <SectionCard title="MCQs">
+              <div className="space-y-4">
+                {(result.mcqs ?? []).map((m, i) => (
+                  <div key={i} className="rounded-xl border border-border p-3">
+                    <p className="text-sm font-medium text-foreground">
+                      {i + 1}. {toText(m?.question)}
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {(m?.options ?? []).map((o, j) => (
+                        <li key={j} className="text-sm text-subtitle">
+                          • {toText(o)}
+                        </li>
+                      ))}
+                    </ul>
+                    {m?.answer != null && (
+                      <p className="mt-2 text-xs font-semibold text-success">
+                        Answer: {toText(m.answer)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+          {result.summary && (
+            <SectionCard title="Summary">
+              <p className="text-sm leading-relaxed text-foreground">{toText(result.summary)}</p>
+            </SectionCard>
+          )}
 
 
           <div className="grid grid-cols-3 gap-2">
