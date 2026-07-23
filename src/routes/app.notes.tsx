@@ -7,6 +7,88 @@ import { toast } from "sonner";
 import { generateNotes } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { CodeBlock } from "@/components/CodeBlock";
+import type { ReactNode } from "react";
+
+type Unknown = unknown;
+
+function isPlainObject(v: Unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function toText(v: Unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) return v.map(toText).filter(Boolean).join(", ");
+  if (isPlainObject(v)) {
+    for (const k of ["text", "value", "description", "content", "label", "name"]) {
+      if (typeof v[k] === "string") return v[k] as string;
+    }
+    return "";
+  }
+  return "";
+}
+
+function SafeValue({ value }: { value: Unknown }): ReactNode {
+  if (value == null || value === "") return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return <span>{String(value)}</span>;
+  }
+  if (Array.isArray(value)) {
+    return (
+      <ul className="list-disc space-y-1 pl-5">
+        {value.map((item, i) => (
+          <li key={i}>
+            <SafeValue value={item} />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (isPlainObject(value)) {
+    const { scenario, steps, visual_representation, visualRepresentation, ...rest } = value as Record<
+      string,
+      unknown
+    >;
+    const visual = visual_representation ?? visualRepresentation;
+    return (
+      <div className="space-y-2">
+        {scenario != null && (
+          <h4 className="text-sm font-semibold text-foreground">{toText(scenario)}</h4>
+        )}
+        {Array.isArray(steps) && steps.length > 0 && (
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-foreground">
+            {steps.map((s, i) => (
+              <li key={i}>
+                <SafeValue value={s} />
+              </li>
+            ))}
+          </ol>
+        )}
+        {typeof steps === "string" && steps && (
+          <p className="text-sm text-foreground">{steps}</p>
+        )}
+        {visual != null && visual !== "" && (
+          <CodeBlock code={typeof visual === "string" ? visual : JSON.stringify(visual, null, 2)} />
+        )}
+        {Object.entries(rest).map(([k, v]) =>
+          v == null || v === "" ? null : (
+            <div key={k}>
+              <p className="text-xs font-medium uppercase tracking-wide text-subtitle">
+                {k.replace(/[_-]/g, " ")}
+              </p>
+              <div className="mt-1 text-sm text-foreground">
+                <SafeValue value={v} />
+              </div>
+            </div>
+          ),
+        )}
+      </div>
+    );
+  }
+  return null;
+}
 
 export const Route = createFileRoute("/app/notes")({
   head: () => ({
