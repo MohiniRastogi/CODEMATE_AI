@@ -193,3 +193,12 @@
 @utility float {
   animation: float 6s ease-in-out infinite;
 }
+
+@keyframes chip-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@utility chip-float {
+  animation: chip-float 3.6s ease-in-out infinite;
+}
