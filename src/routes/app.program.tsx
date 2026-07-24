@@ -1,7 +1,16 @@
 import { useServerFn } from "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { Code2, Save, Share2, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Code2,
+  Save,
+  Share2,
+  RefreshCw,
+  Sparkles,
+  Copy,
+  Download,
+  ChevronDown,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { generateProgram } from "@/lib/ai.functions";
@@ -17,29 +26,65 @@ import { CodeBlock } from "@/components/CodeBlock";
 export const Route = createFileRoute("/app/program")({
   head: () => ({
     meta: [
-      { title: "Program Generator — CodeMateAI" },
+      { title: "AI Code Generator — Program Generator | CodeMateAI" },
       {
         name: "description",
-        content: "Generate clean, production-quality code in 9+ languages with AI explanations and complexity analysis.",
+        content:
+          "Free online AI Code Generator. Generate Python, Java, C, C++, JavaScript, TypeScript, Go, Rust, PHP, Kotlin, Swift, HTML, CSS and SQL code with explanations, complexity analysis and best practices.",
+      },
+      {
+        name: "keywords",
+        content:
+          "AI Code Generator, Program Generator, Online Code Generator, Python Code Generator, Java Code Generator, C Program Generator, Programming Code Generator, Generate Code with AI, Write Code Online, Code Generator Tool",
       },
     ],
   }),
   component: ProgramPage,
 });
 
-const LANGUAGES = ["Python", "Java", "C", "C++", "JavaScript", "C#", "PHP", "Go", "Rust"];
+const LANGUAGES = [
+  "Python",
+  "Java",
+  "C",
+  "C++",
+  "JavaScript",
+  "TypeScript",
+  "Go",
+  "Rust",
+  "PHP",
+  "Kotlin",
+  "Swift",
+  "HTML",
+  "CSS",
+  "SQL",
+];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+
+type Variant = "productionCode" | "beginnerCode" | "optimizedCode";
+const VARIANT_LABELS: Record<Variant, string> = {
+  productionCode: "Production",
+  beginnerCode: "Beginner Friendly",
+  optimizedCode: "Optimized",
+};
 
 function ProgramPage() {
   const [language, setLanguage] = useState("Python");
   const [difficulty, setDifficulty] = useState("Easy");
   const [prompt, setPrompt] = useState("");
+  const [variant, setVariant] = useState<Variant>("productionCode");
   const fn = useServerFn(generateProgram);
 
   const mutation = useMutation({
     mutationFn: (input: { language: string; difficulty: string; prompt: string }) =>
       fn({ data: input }),
     onError: (e: Error) => toast.error(e.message || "AI request failed"),
+    onSuccess: (data) => {
+      storage.addHistory({
+        kind: "program",
+        title: prompt.slice(0, 60) || `${language} program`,
+        data: { language, difficulty, prompt, result: data },
+      });
+    },
   });
 
   const run = () => {
@@ -48,11 +93,21 @@ function ProgramPage() {
   };
 
   const result = mutation.data;
+  const activeCode = result ? result[variant] : "";
+
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
 
   return (
     <FeatureShell
-      title="Program Generator"
-      subtitle="AI-crafted code, ready to run"
+      title="AI Code Generator"
+      subtitle="Generate clean, optimized code in seconds"
       icon={Code2}
       gradient="gradient-blue"
     >
@@ -107,16 +162,53 @@ function ProgramPage() {
         </div>
       )}
 
+      {mutation.isError && (
+        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
+          Something went wrong.{" "}
+          <button onClick={run} className="font-semibold underline">
+            Retry
+          </button>
+        </div>
+      )}
+
       {result && (
         <div className="mt-5 space-y-4">
           <SectionCard title="Generated Code">
-            <CodeBlock code={result.code} language={language.toLowerCase()} />
+            <div className="mb-3 flex flex-wrap gap-2">
+              {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setVariant(v)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    v === variant
+                      ? "gradient-blue text-white shadow-glow"
+                      : "border border-border bg-surface text-foreground"
+                  }`}
+                >
+                  {VARIANT_LABELS[v]}
+                </button>
+              ))}
+            </div>
+            <CodeBlock code={activeCode} language={language.toLowerCase()} />
           </SectionCard>
+
+          <SectionCard title="Line by Line Explanation">
+            <ol className="space-y-2 text-sm text-foreground">
+              {(result.lineByLine ?? []).map((l, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="w-6 shrink-0 font-mono text-xs text-subtitle">{i + 1}.</span>
+                  <span>{l}</span>
+                </li>
+              ))}
+            </ol>
+          </SectionCard>
+
           <SectionCard title="Explanation">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {result.explanation}
             </p>
           </SectionCard>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-border bg-surface p-4">
               <p className="text-xs font-medium text-subtitle">Time Complexity</p>
@@ -132,7 +224,59 @@ function ProgramPage() {
             </div>
           </div>
 
+          <div className="grid gap-3 md:grid-cols-2">
+            <SectionCard title="Example Input">
+              <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
+                {result.exampleInput}
+              </pre>
+            </SectionCard>
+            <SectionCard title="Example Output">
+              <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
+                {result.exampleOutput}
+              </pre>
+            </SectionCard>
+          </div>
+
+          <SectionCard title="Best Practices">
+            <ul className="space-y-2">
+              {(result.bestPractices ?? []).map((b, i) => (
+                <li key={i} className="flex gap-2 text-sm text-foreground">
+                  <span className="text-success">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+
+          <SectionCard title="Common Mistakes">
+            <ul className="space-y-2">
+              {(result.commonMistakes ?? []).map((b, i) => (
+                <li key={i} className="flex gap-2 text-sm text-foreground">
+                  <span className="text-danger">✗</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+
           <div className="grid grid-cols-4 gap-2">
+            <ActionButton icon={Copy} label="Copy" onClick={() => copy(activeCode)} />
+            <ActionButton
+              icon={Download}
+              label="Download"
+              onClick={() => toast.info("Download coming soon")}
+            />
+            <ActionButton
+              icon={Share2}
+              label="Share"
+              onClick={async () => {
+                try {
+                  await navigator.share?.({ title: "CodeMateAI", text: activeCode });
+                } catch {
+                  copy(activeCode);
+                }
+              }}
+            />
             <ActionButton
               icon={Save}
               label="Save"
@@ -145,39 +289,100 @@ function ProgramPage() {
                 toast.success("Saved to bookmarks");
               }}
             />
-            <ActionButton
-              icon={Share2}
-              label="Share"
-              onClick={async () => {
-                try {
-                  await navigator.share?.({ title: "CodeMateAI", text: result.code });
-                } catch {
-                  navigator.clipboard.writeText(result.code);
-                  toast.success("Copied to clipboard");
-                }
-              }}
-            />
-            <ActionButton
-              icon={RefreshCw}
-              label="Regenerate"
-              onClick={run}
-            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <ActionButton icon={RefreshCw} label="Regenerate" onClick={run} />
             <ActionButton
               icon={Sparkles}
-              label="History"
+              label="New Prompt"
               onClick={() => {
-                storage.addHistory({
-                  kind: "program",
-                  title: prompt.slice(0, 60),
-                  data: { language, difficulty, prompt, result },
-                });
-                toast.success("Added to history");
+                setPrompt("");
+                mutation.reset();
               }}
             />
           </div>
         </div>
       )}
+
+      {/* SEO Content */}
+      <div className="mt-10 space-y-4">
+        <SeoBlock
+          title="What is an AI Code Generator?"
+          body="An AI Code Generator is a tool that turns natural-language prompts into working source code. CodeMateAI uses large language models to generate clean, production-quality programs in any popular language, letting you write code online without leaving your browser."
+        />
+        <SeoBlock
+          title="How does the AI Program Generator work?"
+          body="Describe what you want to build, pick a language and difficulty, and the AI Program Generator returns idiomatic code together with a line-by-line explanation, time & space complexity, example input/output and best-practice tips."
+        />
+        <SeoBlock
+          title="Why use AI for programming?"
+          body="Whether you are a student learning Python, a developer scaffolding a Java service or an engineer prototyping in Go, an AI Code Generator dramatically shortens the loop from idea to running code, catches common mistakes, and teaches you patterns as you build."
+        />
+        <SeoBlock
+          title="Benefits of AI Code Generation"
+          body="Instant boilerplate, multiple solution styles (beginner, production, optimized), explanations in plain English, complexity analysis, and best-practice guidance — all from a single Programming Code Generator built into your workflow."
+        />
+        <SeoBlock
+          title="Supported Programming Languages"
+          body="This Online Code Generator supports Python, Java, C, C++, JavaScript, TypeScript, Go, Rust, PHP, Kotlin, Swift, HTML, CSS and SQL — so you can use it as a Python Code Generator, Java Code Generator, C Program Generator or general Code Generator Tool."
+        />
+        <Faq />
+      </div>
     </FeatureShell>
+  );
+}
+
+function SeoBlock({ title, body }: { title: string; body: string }) {
+  return (
+    <section className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
+      <p className="mt-2 text-sm leading-relaxed text-subtitle">{body}</p>
+    </section>
+  );
+}
+
+const FAQS = [
+  {
+    q: "Is the AI Code Generator free?",
+    a: "Yes — you can generate code with AI directly in your browser at no cost.",
+  },
+  {
+    q: "Which language should I pick?",
+    a: "Choose whichever your project needs. The Python Code Generator, Java Code Generator, C Program Generator, JavaScript Generator and HTML Generator all use the same model with language-tuned prompts.",
+  },
+  {
+    q: "Can I use the generated code in production?",
+    a: "The production variant is written to be clean and idiomatic, but always review and test AI-generated code before shipping.",
+  },
+  {
+    q: "Does it explain the code?",
+    a: "Every generation returns a line-by-line explanation, a paragraph overview, complexity analysis and best-practice tips.",
+  },
+];
+
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+      <h2 className="text-base font-semibold text-foreground">Frequently Asked Questions</h2>
+      <ul className="mt-3 divide-y divide-border">
+        {FAQS.map((f, i) => (
+          <li key={i}>
+            <button
+              onClick={() => setOpen(open === i ? null : i)}
+              className="flex w-full items-center justify-between gap-3 py-3 text-left text-sm font-medium text-foreground"
+            >
+              {f.q}
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-subtitle transition ${open === i ? "rotate-180" : ""}`}
+              />
+            </button>
+            {open === i && <p className="pb-3 text-sm leading-relaxed text-subtitle">{f.a}</p>}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
