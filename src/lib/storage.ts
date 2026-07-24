@@ -4,8 +4,7 @@ export type HistoryKind =
   | "review"
   | "notes"
   | "convert"
-  | "interview"
-  | "challenge";
+  | "interview";
 
 export type HistoryItem = {
   id: string;
