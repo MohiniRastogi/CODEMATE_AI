@@ -21,7 +21,7 @@ const TABS: { key: HistoryKind | "all"; label: string }[] = [
   { key: "notes", label: "Notes" },
   { key: "review", label: "Reviews" },
   { key: "project", label: "Projects" },
-  { key: "challenge", label: "Challenges" },
+  { key: "convert", label: "Conversions" },
 ];
 
 function HistoryPage() {
