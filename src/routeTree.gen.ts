@@ -22,7 +22,6 @@ import { Route as AppNotesRouteImport } from './routes/app.notes'
 import { Route as AppInterviewRouteImport } from './routes/app.interview'
 import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppConvertRouteImport } from './routes/app.convert'
-import { Route as AppChallengeRouteImport } from './routes/app.challenge'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -89,17 +88,11 @@ const AppConvertRoute = AppConvertRouteImport.update({
   path: '/convert',
   getParentRoute: () => AppRoute,
 } as any)
-const AppChallengeRoute = AppChallengeRouteImport.update({
-  id: '/challenge',
-  path: '/challenge',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
-  '/app/challenge': typeof AppChallengeRoute
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
@@ -114,7 +107,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
-  '/app/challenge': typeof AppChallengeRoute
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
@@ -131,7 +123,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
-  '/app/challenge': typeof AppChallengeRoute
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
@@ -149,7 +140,6 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/onboarding'
-    | '/app/challenge'
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
@@ -164,7 +154,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/onboarding'
-    | '/app/challenge'
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
@@ -180,7 +169,6 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/onboarding'
-    | '/app/challenge'
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
@@ -292,18 +280,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConvertRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/challenge': {
-      id: '/app/challenge'
-      path: '/challenge'
-      fullPath: '/app/challenge'
-      preLoaderRoute: typeof AppChallengeRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
 interface AppRouteChildren {
-  AppChallengeRoute: typeof AppChallengeRoute
   AppConvertRoute: typeof AppConvertRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppInterviewRoute: typeof AppInterviewRoute
@@ -317,7 +297,6 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppChallengeRoute: AppChallengeRoute,
   AppConvertRoute: AppConvertRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppInterviewRoute: AppInterviewRoute,
@@ -340,13 +319,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -5,18 +5,29 @@ import { createGateway, DEFAULT_MODEL } from "./ai-gateway.server";
 
 const commonSchema = {
   program: z.object({
-    code: z.string(),
+    productionCode: z.string(),
+    beginnerCode: z.string(),
+    optimizedCode: z.string(),
+    lineByLine: z.array(z.string()),
     explanation: z.string(),
     timeComplexity: z.string(),
     spaceComplexity: z.string(),
+    exampleInput: z.string(),
+    exampleOutput: z.string(),
+    bestPractices: z.array(z.string()),
+    commonMistakes: z.array(z.string()),
   }),
   project: z.object({
     projectName: z.string(),
-    overview: z.string(),
+    description: z.string(),
     folderStructure: z.string(),
-    readme: z.string(),
+    files: z.array(z.object({ path: z.string(), content: z.string() })),
     dependencies: z.array(z.string()),
-    sourceCode: z.string(),
+    databaseSchema: z.string(),
+    readme: z.string(),
+    installation: z.array(z.string()),
+    execution: z.array(z.string()),
+    features: z.array(z.string()),
     futureScope: z.array(z.string()),
   }),
   review: z.object({
@@ -25,10 +36,13 @@ const commonSchema = {
     performance: z.number(),
     readability: z.number(),
     security: z.number(),
+    complexity: z.number(),
     optimization: z.number(),
-    bugs: z.array(z.string()),
+    bugs: z.array(z.object({ issue: z.string(), why: z.string(), fix: z.string() })),
     suggestions: z.array(z.string()),
     optimizedCode: z.string(),
+    fixedCode: z.string(),
+    bestPractices: z.array(z.string()),
   }),
   notes: z.object({
     definition: z.string(),
@@ -57,15 +71,6 @@ const commonSchema = {
     examples: z.array(z.string()),
     tips: z.array(z.string()),
     followUps: z.array(z.string()),
-  }),
-  challenge: z.object({
-    title: z.string(),
-    difficulty: z.enum(["Easy", "Medium", "Hard"]),
-    question: z.string(),
-    hints: z.array(z.string()),
-    solution: z.string(),
-    timeComplexity: z.string(),
-    spaceComplexity: z.string(),
   }),
 };
 
@@ -110,19 +115,58 @@ export const generateProgram = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.program,
-      `Write a ${data.difficulty} level ${data.language} program.\n\nTask: ${data.prompt}\n\nReturn clean, production-quality code with clear comments. Include a plain-language explanation and Big-O time/space complexity.`,
-      "You are an expert programming tutor generating high-quality code with clear teaching commentary.",
+      `Write a ${data.difficulty} level ${data.language} program.
+
+Task: ${data.prompt}
+
+Return THREE variants of the solution:
+- productionCode: clean, idiomatic, production-quality code with comments.
+- beginnerCode: the same solution written verbosely with beginner-friendly comments.
+- optimizedCode: the most performance/space optimized version.
+
+Also return:
+- lineByLine: array of short strings (one per meaningful line) that explain each line of productionCode.
+- explanation: a paragraph explaining the approach.
+- timeComplexity, spaceComplexity: Big-O.
+- exampleInput, exampleOutput: concrete sample I/O as plain text.
+- bestPractices: 4-6 items.
+- commonMistakes: 4-6 items to avoid.`,
+      "You are an elite programming tutor generating high-quality, correct, well-explained code across many languages.",
     );
   });
 
 // Mini Project Generator
 export const generateProject = createServerFn({ method: "POST" })
-  .inputValidator((d: { language: string; category: string; difficulty: string; size: string }) => d)
+  .inputValidator(
+    (d: {
+      language: string;
+      framework?: string;
+      category: string;
+      difficulty: string;
+      size: string;
+      projectType?: string;
+    }) => d,
+  )
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.project,
-      `Design a ${data.size}, ${data.difficulty} ${data.language} mini project in the ${data.category} category.\n\nInclude a creative project name, one-paragraph overview, ASCII folder structure, README markdown, dependency list, complete working source code (concatenated with file separators like // === filename ===), and 3-5 future scope ideas.`,
-      "You are a senior engineer designing beginner-friendly but complete mini projects.",
+      `Design a ${data.size}, ${data.difficulty} ${data.language} mini project${
+        data.framework ? ` using ${data.framework}` : ""
+      } in the ${data.category} category${data.projectType ? ` (${data.projectType})` : ""}.
+
+Return a REAL, GitHub-repository-style project:
+- projectName: creative, specific.
+- description: 2-3 sentences.
+- folderStructure: ASCII tree.
+- files: an array of individual files, EACH with { path, content }. Include at minimum a main entry file, config, README.md, and any framework files. Content must be complete and runnable.
+- dependencies: array of package names/versions.
+- databaseSchema: SQL/prisma/schema text if the project needs one, otherwise an empty string.
+- readme: full README markdown.
+- installation: ordered array of shell commands.
+- execution: ordered array of run/test commands.
+- features: 5-8 bullet points.
+- futureScope: 3-5 ideas.`,
+      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects.",
     );
   });
 
@@ -132,8 +176,17 @@ export const reviewCode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.review,
-      `Review this ${data.language ?? "code"} rigorously:\n\n\`\`\`\n${data.code}\n\`\`\`\n\nScore each dimension 0-100. List concrete bugs and suggestions. Provide an optimized version.`,
-      "You are a strict senior code reviewer. Be honest and specific.",
+      `Review this ${data.language ?? "code"} rigorously:
+
+\`\`\`
+${data.code}
+\`\`\`
+
+Score each dimension 0-100 (codeQuality, performance, readability, security, complexity, optimization) and set overallScore.
+For every bug return { issue, why, fix } explaining why it is wrong and how it was fixed.
+Return an optimizedCode (best performance) AND a fixedCode (original but with bugs corrected).
+Also list 4-6 best-practice suggestions.`,
+      "You are a strict, senior code reviewer. Be honest, specific and educational.",
     );
   });
 
@@ -143,7 +196,9 @@ export const generateNotes = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.notes,
-      `Create comprehensive study notes on: "${data.topic}".\n\nInclude clear definition, thorough explanation, 3-5 examples, advantages, disadvantages, 5 interview Q&A, 4 MCQs with 4 options each and the correct answer, and a summary.`,
+      `Create comprehensive study notes on: "${data.topic}".
+
+Include clear definition, thorough explanation, 3-5 examples (plain strings), advantages, disadvantages, 5 interview Q&A, 4 MCQs with 4 options each and the correct answer, and a summary.`,
       "You are a computer science professor creating high-quality student notes.",
     );
   });
@@ -154,7 +209,13 @@ export const convertCode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.convert,
-      `Convert this ${data.fromLanguage} code to ${data.toLanguage}:\n\n\`\`\`${data.fromLanguage}\n${data.code}\n\`\`\`\n\nProduce idiomatic ${data.toLanguage}. Explain the conversion and list 3-5 key language differences.`,
+      `Convert this ${data.fromLanguage} code to ${data.toLanguage}:
+
+\`\`\`${data.fromLanguage}
+${data.code}
+\`\`\`
+
+Produce idiomatic ${data.toLanguage}. Explain the conversion and list 3-5 key language differences.`,
       "You are a polyglot programmer expert in language translation.",
     );
   });
@@ -170,16 +231,5 @@ export const generateInterview = createServerFn({ method: "POST" })
       commonSchema.interview,
       `Generate one thoughtful ${data.category} interview question with a detailed model answer, 2 examples, 3 tips, and 3 follow-up questions.${avoid}`,
       "You are an experienced interviewer at a top tech company.",
-    );
-  });
-
-// Daily Coding Challenge
-export const generateChallenge = createServerFn({ method: "POST" })
-  .inputValidator((d: { seed: string }) => d)
-  .handler(async ({ data }) => {
-    return runStructured(
-      commonSchema.challenge,
-      `Generate today's coding challenge. Use seed "${data.seed}" for variety. Include a clear title, difficulty, problem statement with examples, 3 progressive hints, a clean Python solution, and time/space complexity.`,
-      "You are a competitive programming coach.",
     );
   });
