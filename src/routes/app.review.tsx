@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { ScanSearch, Sparkles, Save } from "lucide-react";
+import { ScanSearch, Sparkles, Save, RefreshCw, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { reviewCode } from "@/lib/ai.functions";
@@ -12,10 +12,11 @@ import { CodeBlock } from "@/components/CodeBlock";
 export const Route = createFileRoute("/app/review")({
   head: () => ({
     meta: [
-      { title: "Code Reviewer — CodeMateAI" },
+      { title: "AI Code Reviewer — CodeMateAI" },
       {
         name: "description",
-        content: "AI-powered code review with quality scoring, bug detection and optimization suggestions.",
+        content:
+          "AI code review with scores for quality, performance, security and complexity, bug explanations, best practices and before/after comparison.",
       },
     ],
   }),
@@ -33,9 +34,18 @@ function ReviewPage() {
 
   const result = mutation.data;
 
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
   return (
     <FeatureShell
-      title="Code Reviewer"
+      title="AI Code Reviewer"
       subtitle="Rigorous, honest AI feedback"
       icon={ScanSearch}
       gradient="gradient-green"
@@ -54,7 +64,7 @@ function ReviewPage() {
         <div className="mt-4">
           <GradientButton
             gradient="gradient-green"
-            onClick={() => code.trim() ? mutation.mutate({ code }) : toast.error("Paste some code first")}
+            onClick={() => (code.trim() ? mutation.mutate({ code }) : toast.error("Paste some code first"))}
             disabled={mutation.isPending}
           >
             <Sparkles className="h-4 w-4" />
@@ -66,6 +76,15 @@ function ReviewPage() {
       {mutation.isPending && (
         <div className="mt-5">
           <LoadingShimmer lines={10} />
+        </div>
+      )}
+
+      {mutation.isError && (
+        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
+          Something went wrong.{" "}
+          <button onClick={() => mutation.mutate({ code })} className="font-semibold underline">
+            Retry
+          </button>
         </div>
       )}
 
@@ -83,17 +102,27 @@ function ReviewPage() {
               <Bar label="Performance" value={result.performance} />
               <Bar label="Readability" value={result.readability} />
               <Bar label="Security" value={result.security} />
+              <Bar label="Complexity" value={result.complexity} />
               <Bar label="Optimization" value={result.optimization} />
             </div>
           </SectionCard>
 
           {(result.bugs ?? []).length > 0 && (
-            <SectionCard title="Bugs">
-              <ul className="space-y-2">
+            <SectionCard title="Bugs & Fixes">
+              <ul className="space-y-3">
                 {(result.bugs ?? []).map((b, i) => (
-                  <li key={i} className="flex gap-2 rounded-xl bg-danger/10 p-3 text-sm text-foreground">
-                    <span className="text-danger">🐛</span>
-                    {b}
+                  <li key={i} className="rounded-2xl border border-danger/20 bg-danger/5 p-3">
+                    <p className="flex gap-2 text-sm font-semibold text-danger">
+                      <span>🐛</span> {b.issue}
+                    </p>
+                    <p className="mt-2 text-xs text-foreground">
+                      <span className="font-semibold text-subtitle">Why: </span>
+                      {b.why}
+                    </p>
+                    <p className="mt-1 text-xs text-foreground">
+                      <span className="font-semibold text-subtitle">Fix: </span>
+                      {b.fix}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -111,28 +140,105 @@ function ReviewPage() {
             </ul>
           </SectionCard>
 
+          {(result.bestPractices ?? []).length > 0 && (
+            <SectionCard title="Best Practices">
+              <ul className="space-y-2">
+                {(result.bestPractices ?? []).map((s, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-foreground">
+                    <span className="text-primary">★</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          <SectionCard
+            title="Before vs After"
+            action={
+              <button
+                onClick={() => copy(result.fixedCode || result.optimizedCode)}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Copy className="h-3 w-3" /> Copy fixed
+              </button>
+            }
+          >
+            <div className="space-y-3">
+              <div>
+                <p className="mb-1 text-xs font-medium text-subtitle">Before (your code)</p>
+                <CodeBlock code={code} />
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-medium text-subtitle">After (bug-fixed)</p>
+                <CodeBlock code={result.fixedCode || result.optimizedCode} />
+              </div>
+            </div>
+          </SectionCard>
+
           <SectionCard title="Optimized Code">
             <CodeBlock code={result.optimizedCode} />
           </SectionCard>
 
-          <button
-            onClick={() => {
-              storage.addBookmark({ kind: "review", title: `Review · Score ${result.overallScore}`, data: result });
-              toast.success("Saved");
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
-          >
-            <Save className="h-4 w-4 text-primary" /> Save Review
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <ActionButton
+              icon={Copy}
+              label="Copy Report"
+              onClick={() => copy(JSON.stringify(result, null, 2))}
+            />
+            <ActionButton
+              icon={Save}
+              label="Save"
+              onClick={() => {
+                storage.addBookmark({
+                  kind: "review",
+                  title: `Review · Score ${result.overallScore}`,
+                  data: result,
+                });
+                toast.success("Saved");
+              }}
+            />
+            <ActionButton
+              icon={RefreshCw}
+              label="Re-review"
+              onClick={() => mutation.mutate({ code })}
+            />
+          </div>
         </div>
       )}
     </FeatureShell>
   );
 }
 
+function ActionButton({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof ScanSearch;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-foreground shadow-soft transition active:scale-95"
+    >
+      <Icon className="h-4 w-4 text-primary" />
+      {label}
+    </button>
+  );
+}
+
 function Bar({ label, value }: { label: string; value: number }) {
   const color =
-    value >= 80 ? "gradient-green" : value >= 60 ? "gradient-blue" : value >= 40 ? "gradient-orange" : "gradient-sunset";
+    value >= 80
+      ? "gradient-green"
+      : value >= 60
+        ? "gradient-blue"
+        : value >= 40
+          ? "gradient-orange"
+          : "gradient-sunset";
   return (
     <div>
       <div className="mb-1 flex justify-between text-xs">
