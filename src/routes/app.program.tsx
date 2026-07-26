@@ -361,7 +361,10 @@ function ProgramPage() {
         />
         <Faq />
       </div>
+
+      <RelatedTools current="/app/program" />
     </FeatureShell>
+
   );
 }
 
