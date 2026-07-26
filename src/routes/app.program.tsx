@@ -260,6 +260,33 @@ function ProgramPage() {
             </ul>
           </SectionCard>
 
+          {(result.edgeCases ?? []).length > 0 && (
+            <SectionCard title="Edge Cases">
+              <ul className="space-y-2">
+                {(result.edgeCases ?? []).map((e, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-foreground">
+                    <span className="text-primary">◆</span>
+                    {e}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {(result.relatedConcepts ?? []).length > 0 && (
+            <SectionCard title="Related Concepts">
+              <div className="flex flex-wrap gap-2">
+                {(result.relatedConcepts ?? []).map((c, i) => (
+                  <span key={i} className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+
+
           <div className="grid grid-cols-4 gap-2">
             <ActionButton icon={Copy} label="Copy" onClick={() => copy(activeCode)} />
             <ActionButton
