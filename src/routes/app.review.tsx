@@ -243,8 +243,12 @@ function ReviewPage() {
             />
           </div>
         </div>
+        </FeatureErrorBoundary>
       )}
+
+      <RelatedTools current="/app/review" />
     </FeatureShell>
+
   );
 }
 
