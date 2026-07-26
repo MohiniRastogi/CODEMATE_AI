@@ -126,19 +126,24 @@ export const generateProgram = createServerFn({ method: "POST" })
 
 Task: ${data.prompt}
 
-Return THREE variants of the solution:
-- productionCode: clean, idiomatic, production-quality code with comments.
-- beginnerCode: the same solution written verbosely with beginner-friendly comments.
-- optimizedCode: the most performance/space optimized version.
+Write the SHORTEST correct solution — no dead code, no unnecessary abstractions, no unused imports.
+
+Return THREE variants:
+- productionCode: clean, idiomatic, production-ready code with concise comments only where they add value.
+- beginnerCode: same logic written step-by-step with beginner-friendly comments.
+- optimizedCode: the most time/space efficient version.
 
 Also return:
-- lineByLine: array of short strings (one per meaningful line) that explain each line of productionCode.
-- explanation: a paragraph explaining the approach.
-- timeComplexity, spaceComplexity: Big-O.
-- exampleInput, exampleOutput: concrete sample I/O as plain text.
+- lineByLine: short strings explaining each meaningful line of productionCode.
+- explanation: one focused paragraph on the approach.
+- timeComplexity, spaceComplexity: Big-O with a short reason.
+- exampleInput, exampleOutput: concrete plain-text sample I/O.
+- edgeCases: 3-5 edge cases the solution handles (or should).
 - bestPractices: 4-6 items.
-- commonMistakes: 4-6 items to avoid.`,
-      "You are an elite programming tutor generating high-quality, correct, well-explained code across many languages.",
+- commonMistakes: 4-6 items to avoid.
+- relatedConcepts: 3-5 related topics worth learning next.`,
+      "You are an elite programming tutor. Generate correct, minimal, efficient and well-explained code. Never pad the answer with unnecessary code.",
+
     );
   });
 
