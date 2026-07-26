@@ -173,7 +173,9 @@ function ProgramPage() {
 
 
       {result && (
+        <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
+
           <SectionCard title="Generated Code">
             <div className="mb-3 flex flex-wrap gap-2">
               {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
