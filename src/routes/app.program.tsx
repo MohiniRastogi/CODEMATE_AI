@@ -333,7 +333,9 @@ function ProgramPage() {
             />
           </div>
         </div>
+        </FeatureErrorBoundary>
       )}
+
 
       {/* SEO Content */}
       <div className="mt-10 space-y-4">
