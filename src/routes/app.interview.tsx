@@ -6,7 +6,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { generateInterview } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
-import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { FeatureShell, GradientButton, LoadingShimmer, SectionCard, EmptyState } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { SafeValue, toArray, toText } from "@/components/SafeRender";
+import { RelatedTools } from "@/components/RelatedTools";
 
 export const Route = createFileRoute("/app/interview")({
   head: () => ({
@@ -14,7 +17,13 @@ export const Route = createFileRoute("/app/interview")({
       { title: "Interview Preparation — CodeMateAI" },
       {
         name: "description",
-        content: "Practice interview questions across Python, Java, DBMS, OS, CN, OOPS, HR and JavaScript.",
+        content:
+          "Practice interview preparation questions across Python, Java, DBMS, OS, Computer Networks, OOPS, HR and JavaScript with model answers and follow-ups.",
+      },
+      { property: "og:title", content: "Interview Preparation — CodeMateAI" },
+      {
+        property: "og:description",
+        content: "Role-based programming interview questions with model answers, examples, tips and follow-ups.",
       },
     ],
   }),
@@ -29,14 +38,22 @@ function InterviewPage() {
   const fn = useServerFn(generateInterview);
   const mutation = useMutation({
     mutationFn: (i: { category: string; previousQuestions?: string[] }) => fn({ data: i }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "AI request failed"),
     onSuccess: (data) => {
-      setSeen((s) => [data.question, ...s].slice(0, 8));
-      storage.addHistory({ kind: "interview", title: data.question.slice(0, 60), data });
+      const q = toText(data?.question);
+      if (q) setSeen((s) => [q, ...s].slice(0, 8));
+      storage.addHistory({ kind: "interview", title: q.slice(0, 60) || "Interview question", data });
     },
   });
 
   const result = mutation.data;
+  const question = toText(result?.question);
+  const answer = toText(result?.answer);
+  const examples = toArray(result?.examples);
+  const tips = toArray(result?.tips);
+  const followUps = toArray(result?.followUps);
+
+  const run = () => mutation.mutate({ category, previousQuestions: seen });
 
   return (
     <FeatureShell
@@ -63,11 +80,7 @@ function InterviewPage() {
           ))}
         </div>
         <div className="mt-4">
-          <GradientButton
-            gradient="gradient-sunset"
-            onClick={() => mutation.mutate({ category, previousQuestions: seen })}
-            disabled={mutation.isPending}
-          >
+          <GradientButton gradient="gradient-sunset" onClick={run} disabled={mutation.isPending}>
             <Sparkles className="h-4 w-4" />
             {mutation.isPending ? "Generating..." : result ? "Next Question" : "Start Practice"}
           </GradientButton>
@@ -80,55 +93,93 @@ function InterviewPage() {
         </div>
       )}
 
-      {result && (
-        <div className="mt-5 space-y-4">
-          <SectionCard title="Question">
-            <p className="text-base font-medium leading-relaxed text-foreground">
-              {result.question}
-            </p>
-          </SectionCard>
-          <SectionCard title="Model Answer">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {result.answer}
-            </p>
-          </SectionCard>
-          <SectionCard title="Examples">
-            <ul className="space-y-2">
-              {(result.examples ?? []).map((e, i) => (
-                <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
-                  {e}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-            <SectionCard title="Tips">
-              <ul className="space-y-1.5 text-sm text-foreground">
-                {(result.tips ?? []).map((t, i) => (
-                  <li key={i}>💡 {t}</li>
-                ))}
-              </ul>
-            </SectionCard>
-            <SectionCard title="Follow-up Questions">
-              <ul className="space-y-1.5 text-sm text-foreground">
-                {(result.followUps ?? []).map((f, i) => (
-                <li key={i} className="flex gap-2 text-sm text-foreground">
-                  <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-          <button
-            onClick={() => {
-              storage.addBookmark({ kind: "interview", title: result.question.slice(0, 60), data: result });
-              toast.success("Bookmarked");
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
-          >
-            <Bookmark className="h-4 w-4 text-primary" /> Bookmark
-          </button>
+      {mutation.isError && (
+        <div className="mt-5">
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={run} />
         </div>
       )}
+
+      {!mutation.isPending && !mutation.isError && !result && (
+        <div className="mt-5">
+          <EmptyState
+            emoji="🎤"
+            title="No question yet"
+            description={`Pick a category and start practicing ${category} interview questions.`}
+          />
+        </div>
+      )}
+
+      {result && !mutation.isPending && (
+        <FeatureErrorBoundary onReset={run}>
+          <div className="mt-5 space-y-4">
+            <SectionCard title="Question">
+              <p className="text-base font-medium leading-relaxed text-foreground">
+                {question || "The AI did not return a question. Try again."}
+              </p>
+            </SectionCard>
+
+            {answer && (
+              <SectionCard title="Model Answer">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{answer}</p>
+              </SectionCard>
+            )}
+
+            {examples.length > 0 && (
+              <SectionCard title="Examples">
+                <ul className="space-y-2">
+                  {examples.map((e, i) => (
+                    <li key={i} className="rounded-xl bg-muted p-3 text-sm text-foreground">
+                      <SafeValue value={e} />
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
+
+            {tips.length > 0 && (
+              <SectionCard title="Tips">
+                <ul className="space-y-1.5 text-sm text-foreground">
+                  {tips.map((t, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span aria-hidden="true">💡</span>
+                      <SafeValue value={t} />
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
+
+            {followUps.length > 0 && (
+              <SectionCard title="Follow-up Questions">
+                <ul className="space-y-1.5 text-sm text-foreground">
+                  {followUps.map((f, i) => (
+                    <li key={i} className="flex gap-2">
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <SafeValue value={f} />
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
+
+            <button
+              onClick={() => {
+                storage.addBookmark({
+                  kind: "interview",
+                  title: question.slice(0, 60) || "Interview question",
+                  data: result,
+                });
+                toast.success("Bookmarked");
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
+            >
+              <Bookmark className="h-4 w-4 text-primary" /> Bookmark
+            </button>
+          </div>
+        </FeatureErrorBoundary>
+      )}
+
+      <RelatedTools current="/app/interview" />
     </FeatureShell>
   );
 }
