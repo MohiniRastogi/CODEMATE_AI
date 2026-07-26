@@ -169,16 +169,17 @@ export const generateProject = createServerFn({ method: "POST" })
 Return a REAL, GitHub-repository-style project:
 - projectName: creative, specific.
 - description: 2-3 sentences.
-- folderStructure: ASCII tree.
-- files: an array of individual files, EACH with { path, content }. Include at minimum a main entry file, config, README.md, and any framework files. Content must be complete and runnable.
-- dependencies: array of package names/versions.
-- databaseSchema: SQL/prisma/schema text if the project needs one, otherwise an empty string.
+- folderStructure: ASCII project tree of every file listed below.
+- files: array of SEPARATE files, EACH with { path, content }. NEVER merge multiple files into one entry. Include the entry file, config, models/routes/helpers as appropriate, requirements/package manifest, .env.example and README.md. Every file's content must be complete and runnable.
+- dependencies: package names with versions.
+- databaseSchema: SQL/Prisma schema text if the project needs one, otherwise an empty string.
+- envVariables: array of { key, description } for every environment variable (empty array if none).
 - readme: full README markdown.
-- installation: ordered array of shell commands.
-- execution: ordered array of run/test commands.
+- installation: ordered shell commands.
+- execution: ordered run/test commands.
 - features: 5-8 bullet points.
-- futureScope: 3-5 ideas.`,
-      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects.",
+- futureScope: 3-5 future improvements.`,
+      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects that look like real GitHub repositories.",
     );
   });
 
@@ -194,10 +195,15 @@ export const reviewCode = createServerFn({ method: "POST" })
 ${data.code}
 \`\`\`
 
-Score each dimension 0-100 (codeQuality, performance, readability, security, complexity, optimization) and set overallScore.
-For every bug return { issue, why, fix } explaining why it is wrong and how it was fixed.
-Return an optimizedCode (best performance) AND a fixedCode (original but with bugs corrected).
-Also list 4-6 best-practice suggestions.`,
+Score each dimension 0-100 (codeQuality, performance, readability, security, maintainability, complexity, optimization) and set overallScore.
+- bugs: for EVERY defect return { issue, why, fix } explaining why it is wrong and exactly how it was corrected.
+- logicErrors: incorrect behaviour / wrong results (empty array if none).
+- syntaxErrors: code that will not compile or parse (empty array if none).
+- suggestions: concrete optimization suggestions.
+- fixedCode: the original code with all bugs corrected.
+- optimizedCode: the best-performing rewrite.
+- bestPractices: 4-6 items.`,
+
       "You are a strict, senior code reviewer. Be honest, specific and educational.",
     );
   });
