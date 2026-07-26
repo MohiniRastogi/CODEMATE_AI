@@ -248,8 +248,12 @@ function ProjectPage() {
             <Save className="h-4 w-4 text-primary" /> Save Project
           </button>
         </div>
+        </FeatureErrorBoundary>
       )}
+
+      <RelatedTools current="/app/project" />
     </FeatureShell>
+
   );
 }
 
