@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { convertCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
 
 export const Route = createFileRoute("/app/convert")({
@@ -150,6 +151,7 @@ function ConvertPage() {
           </div>
         </div>
       )}
+    <RelatedTools current="/app/convert" />
     </FeatureShell>
   );
 }

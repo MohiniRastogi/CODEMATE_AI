@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { generateNotes } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
 import type { ReactNode } from "react";
 
@@ -291,6 +292,7 @@ function NotesPage() {
           </div>
         </div>
       )}
+    <RelatedTools current="/app/notes" />
     </FeatureShell>
   );
 }
