@@ -14,8 +14,10 @@ const commonSchema = {
     spaceComplexity: z.string(),
     exampleInput: z.string(),
     exampleOutput: z.string(),
+    edgeCases: z.array(z.string()),
     bestPractices: z.array(z.string()),
     commonMistakes: z.array(z.string()),
+    relatedConcepts: z.array(z.string()),
   }),
   project: z.object({
     projectName: z.string(),
@@ -24,6 +26,7 @@ const commonSchema = {
     files: z.array(z.object({ path: z.string(), content: z.string() })),
     dependencies: z.array(z.string()),
     databaseSchema: z.string(),
+    envVariables: z.array(z.object({ key: z.string(), description: z.string() })),
     readme: z.string(),
     installation: z.array(z.string()),
     execution: z.array(z.string()),
@@ -36,14 +39,18 @@ const commonSchema = {
     performance: z.number(),
     readability: z.number(),
     security: z.number(),
+    maintainability: z.number(),
     complexity: z.number(),
     optimization: z.number(),
     bugs: z.array(z.object({ issue: z.string(), why: z.string(), fix: z.string() })),
+    logicErrors: z.array(z.string()),
+    syntaxErrors: z.array(z.string()),
     suggestions: z.array(z.string()),
     optimizedCode: z.string(),
     fixedCode: z.string(),
     bestPractices: z.array(z.string()),
   }),
+
   notes: z.object({
     definition: z.string(),
     explanation: z.string(),
@@ -119,19 +126,24 @@ export const generateProgram = createServerFn({ method: "POST" })
 
 Task: ${data.prompt}
 
-Return THREE variants of the solution:
-- productionCode: clean, idiomatic, production-quality code with comments.
-- beginnerCode: the same solution written verbosely with beginner-friendly comments.
-- optimizedCode: the most performance/space optimized version.
+Write the SHORTEST correct solution — no dead code, no unnecessary abstractions, no unused imports.
+
+Return THREE variants:
+- productionCode: clean, idiomatic, production-ready code with concise comments only where they add value.
+- beginnerCode: same logic written step-by-step with beginner-friendly comments.
+- optimizedCode: the most time/space efficient version.
 
 Also return:
-- lineByLine: array of short strings (one per meaningful line) that explain each line of productionCode.
-- explanation: a paragraph explaining the approach.
-- timeComplexity, spaceComplexity: Big-O.
-- exampleInput, exampleOutput: concrete sample I/O as plain text.
+- lineByLine: short strings explaining each meaningful line of productionCode.
+- explanation: one focused paragraph on the approach.
+- timeComplexity, spaceComplexity: Big-O with a short reason.
+- exampleInput, exampleOutput: concrete plain-text sample I/O.
+- edgeCases: 3-5 edge cases the solution handles (or should).
 - bestPractices: 4-6 items.
-- commonMistakes: 4-6 items to avoid.`,
-      "You are an elite programming tutor generating high-quality, correct, well-explained code across many languages.",
+- commonMistakes: 4-6 items to avoid.
+- relatedConcepts: 3-5 related topics worth learning next.`,
+      "You are an elite programming tutor. Generate correct, minimal, efficient and well-explained code. Never pad the answer with unnecessary code.",
+
     );
   });
 
@@ -157,16 +169,17 @@ export const generateProject = createServerFn({ method: "POST" })
 Return a REAL, GitHub-repository-style project:
 - projectName: creative, specific.
 - description: 2-3 sentences.
-- folderStructure: ASCII tree.
-- files: an array of individual files, EACH with { path, content }. Include at minimum a main entry file, config, README.md, and any framework files. Content must be complete and runnable.
-- dependencies: array of package names/versions.
-- databaseSchema: SQL/prisma/schema text if the project needs one, otherwise an empty string.
+- folderStructure: ASCII project tree of every file listed below.
+- files: array of SEPARATE files, EACH with { path, content }. NEVER merge multiple files into one entry. Include the entry file, config, models/routes/helpers as appropriate, requirements/package manifest, .env.example and README.md. Every file's content must be complete and runnable.
+- dependencies: package names with versions.
+- databaseSchema: SQL/Prisma schema text if the project needs one, otherwise an empty string.
+- envVariables: array of { key, description } for every environment variable (empty array if none).
 - readme: full README markdown.
-- installation: ordered array of shell commands.
-- execution: ordered array of run/test commands.
+- installation: ordered shell commands.
+- execution: ordered run/test commands.
 - features: 5-8 bullet points.
-- futureScope: 3-5 ideas.`,
-      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects.",
+- futureScope: 3-5 future improvements.`,
+      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects that look like real GitHub repositories.",
     );
   });
 
@@ -182,10 +195,15 @@ export const reviewCode = createServerFn({ method: "POST" })
 ${data.code}
 \`\`\`
 
-Score each dimension 0-100 (codeQuality, performance, readability, security, complexity, optimization) and set overallScore.
-For every bug return { issue, why, fix } explaining why it is wrong and how it was fixed.
-Return an optimizedCode (best performance) AND a fixedCode (original but with bugs corrected).
-Also list 4-6 best-practice suggestions.`,
+Score each dimension 0-100 (codeQuality, performance, readability, security, maintainability, complexity, optimization) and set overallScore.
+- bugs: for EVERY defect return { issue, why, fix } explaining why it is wrong and exactly how it was corrected.
+- logicErrors: incorrect behaviour / wrong results (empty array if none).
+- syntaxErrors: code that will not compile or parse (empty array if none).
+- suggestions: concrete optimization suggestions.
+- fixedCode: the original code with all bugs corrected.
+- optimizedCode: the best-performing rewrite.
+- bestPractices: 4-6 items.`,
+
       "You are a strict, senior code reviewer. Be honest, specific and educational.",
     );
   });

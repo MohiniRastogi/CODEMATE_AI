@@ -12,7 +12,10 @@ import {
   LoadingShimmer,
   SectionCard,
 } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/project")({
   head: () => ({
@@ -114,16 +117,15 @@ function ProjectPage() {
       )}
 
       {mutation.isError && (
-        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
-          Something went wrong.{" "}
-          <button onClick={run} className="font-semibold underline">
-            Retry
-          </button>
+        <div className="mt-5">
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={run} />
         </div>
       )}
 
       {result && (
+        <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
+
           <SectionCard title={result.projectName}>
             <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
           </SectionCard>
@@ -186,6 +188,21 @@ function ProjectPage() {
             </div>
           </SectionCard>
 
+          {(result.envVariables ?? []).length > 0 && (
+            <SectionCard title="Environment Variables">
+              <ul className="space-y-2">
+                {(result.envVariables ?? []).map((e, i) => (
+                  <li key={i} className="text-sm text-foreground">
+                    <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{e.key}</code>
+                    <span className="ml-2 text-xs text-subtitle">{e.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+
+
           <SectionCard title="Installation">
             <ol className="space-y-2">
               {(result.installation ?? []).map((s, i) => (
@@ -246,8 +263,12 @@ function ProjectPage() {
             <Save className="h-4 w-4 text-primary" /> Save Project
           </button>
         </div>
+        </FeatureErrorBoundary>
       )}
+
+      <RelatedTools current="/app/project" />
     </FeatureShell>
+
   );
 }
 

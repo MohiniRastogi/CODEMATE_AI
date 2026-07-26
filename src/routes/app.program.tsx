@@ -21,7 +21,10 @@ import {
   LoadingShimmer,
   SectionCard,
 } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/program")({
   head: () => ({
@@ -163,16 +166,16 @@ function ProgramPage() {
       )}
 
       {mutation.isError && (
-        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
-          Something went wrong.{" "}
-          <button onClick={run} className="font-semibold underline">
-            Retry
-          </button>
+        <div className="mt-5">
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={run} />
         </div>
       )}
 
+
       {result && (
+        <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
+
           <SectionCard title="Generated Code">
             <div className="mb-3 flex flex-wrap gap-2">
               {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
@@ -259,6 +262,33 @@ function ProgramPage() {
             </ul>
           </SectionCard>
 
+          {(result.edgeCases ?? []).length > 0 && (
+            <SectionCard title="Edge Cases">
+              <ul className="space-y-2">
+                {(result.edgeCases ?? []).map((e, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-foreground">
+                    <span className="text-primary">◆</span>
+                    {e}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {(result.relatedConcepts ?? []).length > 0 && (
+            <SectionCard title="Related Concepts">
+              <div className="flex flex-wrap gap-2">
+                {(result.relatedConcepts ?? []).map((c, i) => (
+                  <span key={i} className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+
+
           <div className="grid grid-cols-4 gap-2">
             <ActionButton icon={Copy} label="Copy" onClick={() => copy(activeCode)} />
             <ActionButton
@@ -303,7 +333,9 @@ function ProgramPage() {
             />
           </div>
         </div>
+        </FeatureErrorBoundary>
       )}
+
 
       {/* SEO Content */}
       <div className="mt-10 space-y-4">
@@ -329,7 +361,10 @@ function ProgramPage() {
         />
         <Faq />
       </div>
+
+      <RelatedTools current="/app/program" />
     </FeatureShell>
+
   );
 }
 

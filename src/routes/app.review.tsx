@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { reviewCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/review")({
   head: () => ({
@@ -80,15 +83,13 @@ function ReviewPage() {
       )}
 
       {mutation.isError && (
-        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
-          Something went wrong.{" "}
-          <button onClick={() => mutation.mutate({ code })} className="font-semibold underline">
-            Retry
-          </button>
+        <div className="mt-5">
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={() => mutation.mutate({ code })} />
         </div>
       )}
 
       {result && (
+        <FeatureErrorBoundary onReset={() => mutation.mutate({ code })}>
         <div className="mt-5 space-y-4">
           <div className="rounded-3xl gradient-green p-6 text-center text-white shadow-lift">
             <p className="text-xs font-medium uppercase tracking-wide opacity-90">Overall Score</p>
@@ -102,10 +103,47 @@ function ReviewPage() {
               <Bar label="Performance" value={result.performance} />
               <Bar label="Readability" value={result.readability} />
               <Bar label="Security" value={result.security} />
+              <Bar label="Maintainability" value={result.maintainability ?? result.codeQuality} />
               <Bar label="Complexity" value={result.complexity} />
               <Bar label="Optimization" value={result.optimization} />
             </div>
           </SectionCard>
+
+          {((result.logicErrors ?? []).length > 0 || (result.syntaxErrors ?? []).length > 0) && (
+            <SectionCard title="Detected Errors">
+              {(result.syntaxErrors ?? []).length > 0 && (
+                <>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-subtitle">
+                    Syntax errors
+                  </p>
+                  <ul className="mb-3 space-y-1.5">
+                    {(result.syntaxErrors ?? []).map((s, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-foreground">
+                        <span className="text-danger">✗</span>
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {(result.logicErrors ?? []).length > 0 && (
+                <>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-subtitle">
+                    Logic errors
+                  </p>
+                  <ul className="space-y-1.5">
+                    {(result.logicErrors ?? []).map((s, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-foreground">
+                        <span className="text-warning">⚠</span>
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </SectionCard>
+          )}
+
 
           {(result.bugs ?? []).length > 0 && (
             <SectionCard title="Bugs & Fixes">
@@ -205,8 +243,12 @@ function ReviewPage() {
             />
           </div>
         </div>
+        </FeatureErrorBoundary>
       )}
+
+      <RelatedTools current="/app/review" />
     </FeatureShell>
+
   );
 }
 
