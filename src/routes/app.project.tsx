@@ -188,6 +188,21 @@ function ProjectPage() {
             </div>
           </SectionCard>
 
+          {(result.envVariables ?? []).length > 0 && (
+            <SectionCard title="Environment Variables">
+              <ul className="space-y-2">
+                {(result.envVariables ?? []).map((e, i) => (
+                  <li key={i} className="text-sm text-foreground">
+                    <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{e.key}</code>
+                    <span className="ml-2 text-xs text-subtitle">{e.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+
+
           <SectionCard title="Installation">
             <ol className="space-y-2">
               {(result.installation ?? []).map((s, i) => (
