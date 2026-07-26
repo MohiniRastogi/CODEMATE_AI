@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { reviewCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/review")({
   head: () => ({

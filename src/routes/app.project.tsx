@@ -12,7 +12,10 @@ import {
   LoadingShimmer,
   SectionCard,
 } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/project")({
   head: () => ({

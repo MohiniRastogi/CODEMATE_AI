@@ -21,7 +21,10 @@ import {
   LoadingShimmer,
   SectionCard,
 } from "@/components/FeatureShell";
+import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
+import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+
 
 export const Route = createFileRoute("/app/program")({
   head: () => ({
@@ -163,13 +166,11 @@ function ProgramPage() {
       )}
 
       {mutation.isError && (
-        <div className="mt-5 rounded-3xl border border-danger/30 bg-danger/5 p-5 text-sm text-danger">
-          Something went wrong.{" "}
-          <button onClick={run} className="font-semibold underline">
-            Retry
-          </button>
+        <div className="mt-5">
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={run} />
         </div>
       )}
+
 
       {result && (
         <div className="mt-5 space-y-4">
