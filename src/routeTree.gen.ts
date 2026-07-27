@@ -13,12 +13,14 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppUtilsRouteImport } from './routes/app.utils'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppSavedRouteImport } from './routes/app.saved'
 import { Route as AppReviewRouteImport } from './routes/app.review'
 import { Route as AppProjectRouteImport } from './routes/app.project'
 import { Route as AppProgramRouteImport } from './routes/app.program'
 import { Route as AppNotesRouteImport } from './routes/app.notes'
+import { Route as AppLegalRouteImport } from './routes/app.legal'
 import { Route as AppInterviewRouteImport } from './routes/app.interview'
 import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppConvertRouteImport } from './routes/app.convert'
@@ -41,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUtilsRoute = AppUtilsRouteImport.update({
+  id: '/utils',
+  path: '/utils',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -73,6 +80,11 @@ const AppNotesRoute = AppNotesRouteImport.update({
   path: '/notes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLegalRoute = AppLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppInterviewRoute = AppInterviewRouteImport.update({
   id: '/interview',
   path: '/interview',
@@ -96,12 +108,14 @@ export interface FileRoutesByFullPath {
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
+  '/app/legal': typeof AppLegalRoute
   '/app/notes': typeof AppNotesRoute
   '/app/program': typeof AppProgramRoute
   '/app/project': typeof AppProjectRoute
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/utils': typeof AppUtilsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -110,12 +124,14 @@ export interface FileRoutesByTo {
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
+  '/app/legal': typeof AppLegalRoute
   '/app/notes': typeof AppNotesRoute
   '/app/program': typeof AppProgramRoute
   '/app/project': typeof AppProjectRoute
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/utils': typeof AppUtilsRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -126,12 +142,14 @@ export interface FileRoutesById {
   '/app/convert': typeof AppConvertRoute
   '/app/history': typeof AppHistoryRoute
   '/app/interview': typeof AppInterviewRoute
+  '/app/legal': typeof AppLegalRoute
   '/app/notes': typeof AppNotesRoute
   '/app/program': typeof AppProgramRoute
   '/app/project': typeof AppProjectRoute
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/utils': typeof AppUtilsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -143,12 +161,14 @@ export interface FileRouteTypes {
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
+    | '/app/legal'
     | '/app/notes'
     | '/app/program'
     | '/app/project'
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
+    | '/app/utils'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -157,12 +177,14 @@ export interface FileRouteTypes {
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
+    | '/app/legal'
     | '/app/notes'
     | '/app/program'
     | '/app/project'
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
+    | '/app/utils'
     | '/app'
   id:
     | '__root__'
@@ -172,12 +194,14 @@ export interface FileRouteTypes {
     | '/app/convert'
     | '/app/history'
     | '/app/interview'
+    | '/app/legal'
     | '/app/notes'
     | '/app/program'
     | '/app/project'
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
+    | '/app/utils'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -215,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/utils': {
+      id: '/app/utils'
+      path: '/utils'
+      fullPath: '/app/utils'
+      preLoaderRoute: typeof AppUtilsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/settings': {
@@ -259,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/legal': {
+      id: '/app/legal'
+      path: '/legal'
+      fullPath: '/app/legal'
+      preLoaderRoute: typeof AppLegalRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/interview': {
       id: '/app/interview'
       path: '/interview'
@@ -287,12 +325,14 @@ interface AppRouteChildren {
   AppConvertRoute: typeof AppConvertRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppInterviewRoute: typeof AppInterviewRoute
+  AppLegalRoute: typeof AppLegalRoute
   AppNotesRoute: typeof AppNotesRoute
   AppProgramRoute: typeof AppProgramRoute
   AppProjectRoute: typeof AppProjectRoute
   AppReviewRoute: typeof AppReviewRoute
   AppSavedRoute: typeof AppSavedRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppUtilsRoute: typeof AppUtilsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -300,12 +340,14 @@ const AppRouteChildren: AppRouteChildren = {
   AppConvertRoute: AppConvertRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppInterviewRoute: AppInterviewRoute,
+  AppLegalRoute: AppLegalRoute,
   AppNotesRoute: AppNotesRoute,
   AppProgramRoute: AppProgramRoute,
   AppProjectRoute: AppProjectRoute,
   AppReviewRoute: AppReviewRoute,
   AppSavedRoute: AppSavedRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppUtilsRoute: AppUtilsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -319,13 +361,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
