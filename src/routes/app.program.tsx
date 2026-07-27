@@ -11,10 +11,11 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { generateProgram } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
+import { LANGUAGE_NAMES, resolveLanguage } from "@/lib/languages";
 import {
   FeatureShell,
   GradientButton,
@@ -27,40 +28,31 @@ import { CodeBlock } from "@/components/CodeBlock";
 
 
 export const Route = createFileRoute("/app/program")({
-  head: () => ({
-    meta: [
-      { title: "AI Code Generator — Program Generator | CodeMateAI" },
-      {
-        name: "description",
-        content:
-          "Free online AI Code Generator. Generate Python, Java, C, C++, JavaScript, TypeScript, Go, Rust, PHP, Kotlin, Swift, HTML, CSS and SQL code with explanations, complexity analysis and best practices.",
-      },
+  validateSearch: (search: Record<string, unknown>) => ({
+    language: typeof search.language === "string" ? search.language : undefined,
+  }),
+  head: ({ match }) => {
+    const lang = resolveLanguage(match.search?.language);
+    const title = `${lang.name} Code Generator — Program Generator | CodeMateAI`;
+    const description = `Free online ${lang.name} Code Generator. Generate ${lang.name} code with line-by-line explanations, complexity analysis and best practices.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
       {
         name: "keywords",
         content:
           "AI Code Generator, Program Generator, Online Code Generator, Python Code Generator, Java Code Generator, C Program Generator, Programming Code Generator, Generate Code with AI, Write Code Online, Code Generator Tool",
       },
-    ],
-  }),
+      ],
+    };
+  },
   component: ProgramPage,
 });
 
-const LANGUAGES = [
-  "Python",
-  "Java",
-  "C",
-  "C++",
-  "JavaScript",
-  "TypeScript",
-  "Go",
-  "Rust",
-  "PHP",
-  "Kotlin",
-  "Swift",
-  "HTML",
-  "CSS",
-  "SQL",
-];
+const LANGUAGES = LANGUAGE_NAMES;
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 
 type Variant = "productionCode" | "beginnerCode" | "optimizedCode";
@@ -71,11 +63,21 @@ const VARIANT_LABELS: Record<Variant, string> = {
 };
 
 function ProgramPage() {
-  const [language, setLanguage] = useState("Python");
+  const { language: languageParam } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const selected = resolveLanguage(languageParam);
+  const [language, setLanguage] = useState(selected.name);
   const [difficulty, setDifficulty] = useState("Easy");
   const [prompt, setPrompt] = useState("");
   const [variant, setVariant] = useState<Variant>("productionCode");
   const fn = useServerFn(generateProgram);
+
+  // Keep the selection in sync when arriving from a language card.
+  useEffect(() => {
+    setLanguage(selected.name);
+  }, [selected.name]);
+
+  const active = resolveLanguage(language);
 
   const mutation = useMutation({
     mutationFn: (input: { language: string; difficulty: string; prompt: string }) =>
@@ -109,8 +111,8 @@ function ProgramPage() {
 
   return (
     <FeatureShell
-      title="AI Code Generator"
-      subtitle="Generate clean, optimized code in seconds"
+      title={`${active.name} Code Generator`}
+      subtitle={`Generate clean, optimized ${active.name} code in seconds`}
       icon={Code2}
       gradient="gradient-blue"
     >
@@ -120,7 +122,13 @@ function ProgramPage() {
             <span className="mb-1.5 block text-xs font-medium text-subtitle">Language</span>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => {
+                setLanguage(e.target.value);
+                navigate({
+                  search: { language: resolveLanguage(e.target.value).slug },
+                  replace: true,
+                });
+              }}
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground"
             >
               {LANGUAGES.map((l) => (
@@ -146,11 +154,18 @@ function ProgramPage() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={`Write a ${language} program to find prime numbers...`}
+            placeholder={active.placeholder}
             rows={4}
             className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground"
           />
         </label>
+        <button
+          type="button"
+          onClick={() => setPrompt(active.example)}
+          className="mt-2 text-left text-xs font-medium text-primary"
+        >
+          Try an example: {active.example}
+        </button>
         <div className="mt-4">
           <GradientButton onClick={run} disabled={mutation.isPending}>
             <Sparkles className="h-4 w-4" />
