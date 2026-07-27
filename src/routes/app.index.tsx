@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
+import { FEATURED_LANGUAGES } from "@/lib/languages";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
@@ -122,17 +124,6 @@ const TOOLS: ToolCard[] = [
   },
 ];
 
-const LANGUAGES: Array<{ name: string; emoji: string; desc: string }> = [
-  { name: "Python", emoji: "🐍", desc: "Use the Python Code Generator for scripts, automation, APIs and data structures." },
-  { name: "Java", emoji: "☕", desc: "The Java Code Generator writes OOP examples, algorithms and Spring snippets." },
-  { name: "C", emoji: "🔧", desc: "A C Program Generator for pointers, arrays and classic exercises." },
-  { name: "C++", emoji: "🧠", desc: "STL usage, competitive programming solutions and OOP designs." },
-  { name: "JavaScript", emoji: "🟨", desc: "Browser logic, Node scripts and API clients in seconds." },
-  { name: "TypeScript", emoji: "🔷", desc: "Typed utilities, components and backend services." },
-  { name: "Go", emoji: "🐹", desc: "CLI tools, concurrent workers and HTTP services." },
-  { name: "SQL", emoji: "🗄️", desc: "Queries, joins, schemas and reporting statements." },
-];
-
 const WHY = [
   { icon: Sparkles, title: "AI-Powered Generation", body: "Context-aware output from a modern language model." },
   { icon: Gauge, title: "Optimized Code", body: "Beginner, production and optimized variants side by side." },
@@ -154,7 +145,30 @@ const tips = [
   "Read the error message twice before opening Stack Overflow.",
   "Cache invalidation is hard; TTLs are usually your friend.",
   "Write the test first when the bug is hard to reproduce.",
-];
+  "Delete dead code — version control remembers it for you.",
+  "A function that needs a comment to explain its name needs a better name.",
+  "Prefer composition over inheritance; it survives refactors better.",
+  "Log the inputs, not just the error — you will thank yourself at 2am.",
+  "Make it work, make it right, make it fast — in that order.",
+  "Every `any` in TypeScript is a bug you have agreed to find later.",
+  "Fix the failing test before writing the next feature.",
+  "Immutable data removes a whole category of concurrency bugs.",
+  "Profile before you optimize; intuition about performance is usually wrong.",
+  "Handle the error path first, then the happy path reads cleanly.",
+  "Keep functions short enough to fit on one screen.",
+  "Use meaningful commit messages — future you is a different person.",
+  "Validate input at the boundary, trust it everywhere inside.",
+  "Avoid clever one-liners; clarity outlives cleverness.",
+  "Indexes make reads fast and writes slower — measure both.",
+  "Pin your dependencies, then upgrade them on purpose.",
+  "Rubber-duck the bug out loud before adding another print statement.",
+  "Write the README while the design is still fresh in your head.",
+  "Nulls are cheap to create and expensive to debug — use optionals.",
+  "Feature flags let you ship unfinished work safely.",
+  "Automate anything you have done manually three times.",
+  "Reading code is harder than writing it — optimize for the reader.",
+]; 
+
 
 function Home() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -172,7 +186,7 @@ function Home() {
   const projectsGenerated = history.filter((h) => h.kind === "project").length;
 
   return (
-    <main className="pb-8 pt-[calc(env(safe-area-inset-top)+16px)]">
+    <main className="pb-28 pt-[calc(env(safe-area-inset-top)+16px)]">
       <div className="mx-auto max-w-2xl px-5">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
           <div className="min-w-0">
@@ -261,10 +275,11 @@ function Home() {
         <section className="mt-8" aria-labelledby="languages-title">
           <SectionHeading id="languages-title">Popular Programming Languages</SectionHeading>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {LANGUAGES.map((l) => (
+            {FEATURED_LANGUAGES.map((l) => (
               <Link
-                key={l.name}
+                key={l.slug}
                 to="/app/program"
+                search={{ language: l.slug }}
                 className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-3 shadow-soft transition active:scale-[0.99]"
                 aria-label={`Generate ${l.name} code`}
               >
@@ -333,15 +348,24 @@ function Home() {
           <SectionHeading id="recent-activity-title">Recent Activity</SectionHeading>
           {recent.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-border bg-surface p-5 text-center">
-              <p className="text-sm text-subtitle">
-                No activity yet. Generate your first program to see it here.
+              <p className="text-sm font-medium text-foreground">No recent activity yet.</p>
+              <p className="mt-1 text-sm leading-relaxed text-subtitle">
+                Generate your first program, review code or build a project to see your history here.
               </p>
-              <Link
-                to="/app/program"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
-              >
-                Open the AI Code Generator <ArrowUpRight className="h-4 w-4" />
-              </Link>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Link
+                  to="/app/program"
+                  className="inline-flex items-center gap-1.5 rounded-full gradient-blue px-4 py-2 text-sm font-semibold text-white shadow-glow"
+                >
+                  Generate Code <ArrowUpRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/app/review"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-soft"
+                >
+                  Review Code
+                </Link>
+              </div>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -376,34 +400,8 @@ function Home() {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-8 border-t border-border pt-6" aria-labelledby="footer-title">
-          <h2 id="footer-title" className="text-sm font-semibold text-foreground">
-            CodeMateAI — your personal AI coding companion
-          </h2>
-          <p className="mt-1 text-xs leading-relaxed text-subtitle">
-            An online code generator and developer toolkit for students and engineers.
-          </p>
-          <nav aria-label="Footer" className="mt-4 grid grid-cols-2 gap-y-2">
-            {TOOLS.map((t) => (
-              <Link key={t.to} to={t.to} className="text-xs font-medium text-primary">
-                {t.title}
-              </Link>
-            ))}
-            <Link to="/app/history" className="text-xs font-medium text-subtitle">
-              History
-            </Link>
-            <Link to="/app/saved" className="text-xs font-medium text-subtitle">
-              Saved
-            </Link>
-            <Link to="/app/settings" className="text-xs font-medium text-subtitle">
-              Settings
-            </Link>
-          </nav>
-          <p className="mt-5 text-[11px] text-subtitle">
-            © {new Date().getFullYear()} CodeMateAI. Always review AI-generated code before shipping.
-          </p>
-        </footer>
+        <SiteFooter />
+
       </div>
     </main>
   );
