@@ -3,23 +3,7 @@ import { Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { FeatureShell, GradientButton, SectionCard } from "@/components/FeatureShell";
-
-export const UTILS = [
-  { slug: "json-formatter", name: "JSON Formatter" },
-  { slug: "json-validator", name: "JSON Validator" },
-  { slug: "uuid-generator", name: "UUID Generator" },
-  { slug: "hash-generator", name: "Hash Generator" },
-  { slug: "base64-encoder", name: "Base64 Encoder" },
-  { slug: "gradient-generator", name: "Gradient Generator" },
-  { slug: "color-picker", name: "Color Picker" },
-  { slug: "password-generator", name: "Password Generator" },
-] as const;
-
-type UtilSlug = (typeof UTILS)[number]["slug"];
-
-function resolveUtil(input?: string | null) {
-  return UTILS.find((u) => u.slug === input) ?? UTILS[0];
-}
+import { UTILS, resolveUtil, type UtilSlug } from "@/lib/devtools";
 
 export const Route = createFileRoute("/app/utils")({
   validateSearch: (search: Record<string, unknown>) => ({

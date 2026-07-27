@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { FEATURED_LANGUAGES } from "@/lib/languages";
-import { UTILS } from "@/routes/app.utils";
+import { UTILS } from "@/lib/devtools";
 
 const AI_TOOLS = [
   { to: "/app/program", label: "AI Code Generator" },
