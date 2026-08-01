@@ -416,34 +416,6 @@ function TreeLevel({
   );
 }
 
-function unusedExtLang(path: string, fallback: string) {
-  const ext = path.split(".").pop()?.toLowerCase() ?? "";
-  const map: Record<string, string> = {
-    py: "python",
-    js: "javascript",
-    jsx: "jsx",
-    ts: "typescript",
-    tsx: "tsx",
-    java: "java",
-    c: "c",
-    cpp: "cpp",
-    h: "c",
-    go: "go",
-    rs: "rust",
-    php: "php",
-    html: "html",
-    css: "css",
-    sql: "sql",
-    json: "json",
-    md: "markdown",
-    yml: "yaml",
-    yaml: "yaml",
-    sh: "bash",
-    txt: "text",
-  };
-  return map[ext] ?? fallback.toLowerCase();
-}
-
 function ActionButton({
   icon: Icon,
   label,
