@@ -225,7 +225,7 @@ function Home() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
-                to="/app/program"
+                to="/app/program" search={{}}
                 className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary shadow-lg"
               >
                 Generate Code <ArrowUpRight className="h-4 w-4" />
@@ -254,7 +254,7 @@ function Home() {
                   storage. Nothing is uploaded, and there is no account to create.
                 </p>
                 <Link
-                  to="/app/program"
+                  to="/app/program" search={{}}
                   className="mt-3 inline-flex items-center gap-1.5 rounded-full gradient-blue px-4 py-2 text-sm font-semibold text-white shadow-glow"
                 >
                   Generate your first program <ArrowUpRight className="h-4 w-4" />
@@ -382,7 +382,7 @@ function Home() {
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Link
-                  to="/app/program"
+                  to="/app/program" search={{}}
                   className="inline-flex items-center gap-1.5 rounded-full gradient-blue px-4 py-2 text-sm font-semibold text-white shadow-glow"
                 >
                   Generate Code <ArrowUpRight className="h-4 w-4" />
