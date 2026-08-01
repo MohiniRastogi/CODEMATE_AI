@@ -319,6 +319,105 @@ function ProjectPage() {
 
 function extLang(path: string, fallback: string) {
   const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_MAP[ext] ?? fallback.toLowerCase();
+}
+
+const EXT_MAP: Record<string, string> = {
+  py: "python",
+  js: "javascript",
+  jsx: "jsx",
+  ts: "typescript",
+  tsx: "tsx",
+  java: "java",
+  c: "c",
+  cpp: "cpp",
+  h: "c",
+  go: "go",
+  rs: "rust",
+  php: "php",
+  html: "html",
+  css: "css",
+  sql: "sql",
+  json: "json",
+  md: "markdown",
+  yml: "yaml",
+  yaml: "yaml",
+  sh: "bash",
+  txt: "text",
+};
+
+type TreeNode = { name: string; path: string; children: TreeNode[]; isFile: boolean };
+
+function buildTree(paths: string[]): TreeNode[] {
+  const root: TreeNode[] = [];
+  for (const full of paths) {
+    const parts = full.split("/").filter(Boolean);
+    let level = root;
+    parts.forEach((part, i) => {
+      const isFile = i === parts.length - 1;
+      let node = level.find((n) => n.name === part && n.isFile === isFile);
+      if (!node) {
+        node = { name: part, path: full, children: [], isFile };
+        level.push(node);
+      }
+      level = node.children;
+    });
+  }
+  return root;
+}
+
+function FileTree({ paths, onSelect }: { paths: string[]; onSelect: (path: string) => void }) {
+  const tree = buildTree(paths);
+  if (tree.length === 0) return null;
+  return (
+    <ul className="rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
+      <TreeLevel nodes={tree} depth={0} onSelect={onSelect} />
+    </ul>
+  );
+}
+
+function TreeLevel({
+  nodes,
+  depth,
+  onSelect,
+}: {
+  nodes: TreeNode[];
+  depth: number;
+  onSelect: (path: string) => void;
+}) {
+  return (
+    <>
+      {nodes.map((n) => (
+        <li key={n.path + n.name + depth}>
+          {n.isFile ? (
+            <button
+              onClick={() => onSelect(n.path)}
+              style={{ paddingLeft: depth * 14 }}
+              className="flex w-full items-center gap-1.5 rounded py-0.5 text-left transition hover:text-primary"
+            >
+              <FileText className="h-3 w-3 shrink-0 text-subtitle" /> {n.name}
+            </button>
+          ) : (
+            <div
+              style={{ paddingLeft: depth * 14 }}
+              className="flex items-center gap-1.5 py-0.5 font-semibold"
+            >
+              <Folder className="h-3 w-3 shrink-0 text-primary" /> {n.name}/
+            </div>
+          )}
+          {n.children.length > 0 && (
+            <ul>
+              <TreeLevel nodes={n.children} depth={depth + 1} onSelect={onSelect} />
+            </ul>
+          )}
+        </li>
+      ))}
+    </>
+  );
+}
+
+function unusedExtLang(path: string, fallback: string) {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
   const map: Record<string, string> = {
     py: "python",
     js: "javascript",
