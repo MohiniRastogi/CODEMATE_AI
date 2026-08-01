@@ -484,12 +484,23 @@ function StatCard({
   value,
   icon: Icon,
   gradient,
+  empty,
 }: {
   label: string;
   value: number;
   icon: typeof Code2;
   gradient: string;
+  empty?: string;
 }) {
+  if (value === 0 && empty) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-surface p-4 shadow-soft">
+        <Icon className="h-4 w-4 text-subtitle" />
+        <p className="mt-2 text-xs font-medium leading-snug text-foreground">{empty}</p>
+        <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-subtitle">{label}</p>
+      </div>
+    );
+  }
   return (
     <div className={`relative overflow-hidden rounded-2xl ${gradient} p-4 text-white shadow-soft`}>
       <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/15 blur-xl" />
