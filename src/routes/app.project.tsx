@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { Rocket, Save, Sparkles, Copy, Download, RefreshCw, FileCode2 } from "lucide-react";
+import { Rocket, Save, Sparkles, Copy, Download, RefreshCw, FileCode2, Folder, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 import { generateProject } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import {
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/app/project")({
 const LANGUAGES = ["Python", "Java", "JavaScript", "TypeScript", "C++", "Go", "Rust", "PHP"];
 const FRAMEWORKS = ["None", "Flask", "Django", "FastAPI", "Express", "Next.js", "React", "Spring Boot", "Gin"];
 const CATEGORIES = ["Web App", "CLI Tool", "Data Science", "Game", "API", "Automation", "AI/ML"];
-const PROJECT_TYPES = ["Full-Stack", "Backend", "Frontend", "Script", "Library"];
+const PROJECT_TYPES = ["CLI App", "REST API", "Web App", "Script", "Full-Stack", "Library"];
 const SIZES = ["Small", "Medium", "Large"];
 const DIFFS = ["Easy", "Medium", "Hard"];
 
@@ -42,7 +43,7 @@ function ProjectPage() {
   const [language, setLanguage] = useState("Python");
   const [framework, setFramework] = useState("None");
   const [category, setCategory] = useState("CLI Tool");
-  const [projectType, setProjectType] = useState("Script");
+  const [projectType, setProjectType] = useState("CLI App");
   const [difficulty, setDifficulty] = useState("Medium");
   const [size, setSize] = useState("Small");
   const [activeFile, setActiveFile] = useState(0);
@@ -83,6 +84,27 @@ function ProjectPage() {
       toast.success("Copied");
     } catch {
       toast.error("Copy failed");
+    }
+  };
+
+  const downloadZip = async () => {
+    if (!result) return;
+    try {
+      const zip = new JSZip();
+      for (const f of result.files ?? []) zip.file(f.path, f.content);
+      if (result.readme && !(result.files ?? []).some((f) => /readme\.md$/i.test(f.path))) {
+        zip.file("README.md", result.readme);
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${result.projectName.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Project downloaded");
+    } catch {
+      toast.error("Could not build the ZIP");
     }
   };
 
@@ -130,10 +152,33 @@ function ProjectPage() {
             <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
           </SectionCard>
 
-          <SectionCard title="Folder Structure">
-            <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
-              {result.folderStructure}
-            </pre>
+          <SectionCard
+            title="Project Structure"
+            action={
+              <button
+                onClick={downloadZip}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Download className="h-3 w-3" /> Download ZIP
+              </button>
+            }
+          >
+            <FileTree
+              paths={(result.files ?? []).map((f) => f.path)}
+              onSelect={(p) =>
+                setActiveFile(Math.max(0, (result.files ?? []).findIndex((f) => f.path === p)))
+              }
+            />
+            {result.folderStructure && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-medium text-primary">
+                  View raw folder structure
+                </summary>
+                <pre className="mt-2 overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
+                  {result.folderStructure}
+                </pre>
+              </details>
+            )}
           </SectionCard>
 
           <SectionCard title="Files">
@@ -161,7 +206,7 @@ function ProjectPage() {
                   <ActionButton
                     icon={Download}
                     label="Download ZIP"
-                    onClick={() => toast.info("Download coming soon")}
+                    onClick={downloadZip}
                   />
                   <ActionButton icon={RefreshCw} label="Regenerate" onClick={run} />
                 </div>
