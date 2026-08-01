@@ -134,6 +134,7 @@ function InterviewPage() {
         </div>
       </div>
 
+      <div className="mt-5">
       <SectionCard title="Your Practice Progress">
         {totalPracticed === 0 ? (
           <p className="text-sm text-subtitle">
@@ -162,6 +163,7 @@ function InterviewPage() {
           </div>
         )}
       </SectionCard>
+      </div>
 
       {mock && mockDone && (
         <div className="mt-5 rounded-3xl gradient-purple p-6 text-center text-white shadow-lift">
