@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Bell,
   Search,
   Sparkles,
   Code2,
