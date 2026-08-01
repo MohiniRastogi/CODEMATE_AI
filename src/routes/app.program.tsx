@@ -191,7 +191,19 @@ function ProgramPage() {
         <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
 
-          <SectionCard title="Generated Code">
+          <SectionCard
+            title="Generated Code"
+            action={
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
+                  ⏱ {result.timeComplexity}
+                </span>
+                <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-[11px] font-semibold text-secondary">
+                  ▤ {result.spaceComplexity}
+                </span>
+              </div>
+            }
+          >
             <div className="mb-3 flex flex-wrap gap-2">
               {(Object.keys(VARIANT_LABELS) as Variant[]).map((v) => (
                 <button
@@ -208,6 +220,21 @@ function ProgramPage() {
               ))}
             </div>
             <CodeBlock code={activeCode} language={language.toLowerCase()} />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <ActionButton icon={Copy} label="Copy code" onClick={() => copy(activeCode)} />
+              <ActionButton
+                icon={Save}
+                label="Save to history"
+                onClick={() => {
+                  storage.addHistory({
+                    kind: "program",
+                    title: prompt.slice(0, 60) || `${language} program`,
+                    data: { language, difficulty, prompt, result },
+                  });
+                  toast.success("Saved to history");
+                }}
+              />
+            </div>
           </SectionCard>
 
           <SectionCard title="Line by Line Explanation">
@@ -309,7 +336,16 @@ function ProgramPage() {
             <ActionButton
               icon={Download}
               label="Download"
-              onClick={() => toast.info("Download coming soon")}
+              onClick={() => {
+                const ext = active.slug === "python" ? "py" : active.slug === "javascript" ? "js" : "txt";
+                const blob = new Blob([activeCode], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `codemate-${active.slug}.${ext}`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
             />
             <ActionButton
               icon={Share2}
