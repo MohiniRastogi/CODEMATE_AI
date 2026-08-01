@@ -21,6 +21,7 @@ const BOOKMARK_KEY = "codemate.bookmarks";
 const SETTINGS_KEY = "codemate.settings";
 const ONBOARDED_KEY = "codemate.onboarded";
 const CHALLENGE_KEY = "codemate.challengeProgress";
+const INTERVIEW_KEY = "codemate.interviewProgress";
 
 function safeParse<T>(v: string | null, fallback: T): T {
   if (!v) return fallback;
@@ -114,6 +115,18 @@ export const storage = {
     const p = this.getChallengeProgress();
     p[dateKey] = true;
     localStorage.setItem(CHALLENGE_KEY, JSON.stringify(p));
+  },
+
+  getInterviewProgress(): Record<string, number> {
+    if (!this.isBrowser()) return {};
+    return safeParse(localStorage.getItem(INTERVIEW_KEY), {} as Record<string, number>);
+  },
+  markInterviewPracticed(category: string) {
+    if (!this.isBrowser()) return {} as Record<string, number>;
+    const p = this.getInterviewProgress();
+    p[category] = (p[category] ?? 0) + 1;
+    localStorage.setItem(INTERVIEW_KEY, JSON.stringify(p));
+    return p;
   },
 };
 

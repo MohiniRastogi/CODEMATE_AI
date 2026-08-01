@@ -107,8 +107,18 @@ function ConvertPage() {
 
       {result && (
         <div className="mt-5 space-y-4">
-          <SectionCard title={`${to} Code`}>
-            <CodeBlock code={result.convertedCode} language={to.toLowerCase()} />
+          <ConversionWarning from={from} to={to} />
+          <SectionCard title={`${from} → ${to}`}>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="min-w-0">
+                <p className="mb-1 text-xs font-medium text-subtitle">Source · {from}</p>
+                <CodeBlock code={code} language={from.toLowerCase()} />
+              </div>
+              <div className="min-w-0">
+                <p className="mb-1 text-xs font-medium text-subtitle">Converted · {to}</p>
+                <CodeBlock code={result.convertedCode} language={to.toLowerCase()} />
+              </div>
+            </div>
           </SectionCard>
           <SectionCard title="Explanation">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
@@ -153,5 +163,37 @@ function ConvertPage() {
       )}
     <RelatedTools current="/app/convert" />
     </FeatureShell>
+  );
+}
+
+const DYNAMIC = ["Python", "JavaScript", "PHP"];
+const STATIC = ["Java", "C", "C++", "C#", "Go", "Rust", "TypeScript"];
+
+function ConversionWarning({ from, to }: { from: string; to: string }) {
+  const notes: string[] = [];
+  if (DYNAMIC.includes(from) && STATIC.includes(to)) {
+    notes.push(
+      `${from} is dynamically typed and ${to} is not — duck typing, dynamic attributes and flexible collections have to be replaced with explicit types, generics or interfaces.`,
+    );
+  }
+  if (STATIC.includes(from) && DYNAMIC.includes(to)) {
+    notes.push(
+      `Type guarantees from ${from} disappear in ${to}; add runtime validation where the original relied on the compiler.`,
+    );
+  }
+  if (["C", "C++", "Rust"].includes(from) && !["C", "C++", "Rust"].includes(to)) {
+    notes.push("Manual memory management and pointer arithmetic have no direct equivalent and are emulated.");
+  }
+  if (from === to) notes.push("Source and target languages are the same — pick a different target to convert.");
+  if (notes.length === 0) return null;
+  return (
+    <div className="rounded-2xl border border-warning/30 bg-warning/10 p-4">
+      <p className="text-sm font-semibold text-foreground">⚠ Conversion confidence note</p>
+      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-subtitle">
+        {notes.map((n, i) => (
+          <li key={i}>• {n}</li>
+        ))}
+      </ul>
+    </div>
   );
 }

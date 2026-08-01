@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { FeatureShell, GradientButton, SectionCard } from "@/components/FeatureShell";
-import { UTILS, resolveUtil, type UtilSlug } from "@/lib/devtools";
+import { UTILS, UTIL_CATEGORIES, resolveUtil, type UtilSlug } from "@/lib/devtools";
 
 export const Route = createFileRoute("/app/utils")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -28,34 +28,42 @@ export const Route = createFileRoute("/app/utils")({
 function UtilsPage() {
   const { tool } = Route.useSearch();
   const active = resolveUtil(tool);
+  const [category, setCategory] = useState<string>(active.category);
+
+  const visible = UTILS.filter((u) => u.category === category);
 
   return (
     <FeatureShell
-      title={active.name}
+      title="Developer Utilities"
       subtitle="Developer utilities that run in your browser"
       icon={Wrench}
       gradient="gradient-sky"
     >
-      <nav aria-label="Developer utilities" className="mb-4 flex flex-wrap gap-2">
-        {UTILS.map((u) => (
-          <Link
-            key={u.slug}
-            to="/app/utils"
-            search={{ tool: u.slug }}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              u.slug === active.slug
+      <nav aria-label="Utility categories" className="mb-4 flex flex-wrap gap-2">
+        {UTIL_CATEGORIES.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+              c === category
                 ? "gradient-sky text-white shadow-glow"
                 : "border border-border bg-surface text-foreground"
             }`}
           >
-            {u.name}
-          </Link>
+            {c}
+          </button>
         ))}
       </nav>
 
-      <SectionCard title={active.name}>
-        <UtilBody slug={active.slug} />
-      </SectionCard>
+      <div className="space-y-4">
+        {visible.map((u) => (
+          <div key={u.slug} id={u.slug}>
+            <SectionCard title={u.name}>
+              <UtilBody slug={u.slug} />
+            </SectionCard>
+          </div>
+        ))}
+      </div>
     </FeatureShell>
   );
 }

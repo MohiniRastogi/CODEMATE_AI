@@ -1,6 +1,7 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function FeatureShell({
   title,
@@ -34,10 +35,42 @@ export function FeatureShell({
             </div>
             <p className="mt-0.5 truncate text-sm text-white/80">{subtitle}</p>
           </div>
+          <ThemeToggle variant="onGradient" />
         </div>
       </div>
-      <div className="mx-auto max-w-2xl px-4 pt-5">{children}</div>
+      <div className="mx-auto max-w-2xl px-4 pt-4">
+        <Breadcrumbs current={title} />
+        <div className="pt-3">{children}</div>
+      </div>
     </div>
+  );
+}
+
+export function Breadcrumbs({ current }: { current: string }) {
+  return (
+    <nav aria-label="Breadcrumb">
+      <ol className="flex flex-wrap items-center gap-1 text-xs text-subtitle">
+        <li>
+          <Link to="/app" className="font-medium transition hover:text-primary">
+            Home
+          </Link>
+        </li>
+        <li aria-hidden="true">
+          <ChevronRight className="h-3 w-3" />
+        </li>
+        <li>
+          <Link to="/app" hash="featured-tools-title" className="font-medium transition hover:text-primary">
+            Tools
+          </Link>
+        </li>
+        <li aria-hidden="true">
+          <ChevronRight className="h-3 w-3" />
+        </li>
+        <li className="font-semibold text-foreground" aria-current="page">
+          {current}
+        </li>
+      </ol>
+    </nav>
   );
 }
 
