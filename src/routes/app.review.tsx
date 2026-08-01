@@ -1,15 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { ScanSearch, Sparkles, Save, RefreshCw, Copy } from "lucide-react";
-import { useState } from "react";
+import { ScanSearch, Sparkles, Save, RefreshCw, Copy, Wand2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from "recharts";
 import { reviewCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
 import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
 import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+import { AnnotatedCode, extractLine, type Annotation } from "@/components/AnnotatedCode";
+import { CodeDiff } from "@/components/CodeDiff";
 
 
 export const Route = createFileRoute("/app/review")({
@@ -28,6 +38,7 @@ export const Route = createFileRoute("/app/review")({
 
 function ReviewPage() {
   const [code, setCode] = useState("");
+  const [showDiff, setShowDiff] = useState(false);
   const fn = useServerFn(reviewCode);
   const mutation = useMutation({
     mutationFn: (input: { code: string }) => fn({ data: input }),
@@ -36,6 +47,24 @@ function ReviewPage() {
   });
 
   const result = mutation.data;
+
+  const annotations = useMemo<Annotation[]>(() => {
+    if (!result) return [];
+    const out: Annotation[] = [];
+    for (const s of result.syntaxErrors ?? []) {
+      const line = extractLine(s);
+      if (line) out.push({ line, text: s, severity: "error" });
+    }
+    for (const s of result.logicErrors ?? []) {
+      const line = extractLine(s);
+      if (line) out.push({ line, text: s, severity: "warning" });
+    }
+    for (const b of result.bugs ?? []) {
+      const line = extractLine(`${b.issue} ${b.fix}`);
+      if (line) out.push({ line, text: `${b.issue} — ${b.fix}`, severity: "error" });
+    }
+    return out;
+  }, [result]);
 
   const copy = async (text: string) => {
     try {
@@ -98,6 +127,31 @@ function ReviewPage() {
           </div>
 
           <SectionCard title="Breakdown">
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart
+                  data={[
+                    { metric: "Readability", value: result.readability },
+                    { metric: "Performance", value: result.performance },
+                    { metric: "Security", value: result.security },
+                    { metric: "Maintainability", value: result.maintainability ?? result.codeQuality },
+                  ]}
+                >
+                  <PolarGrid stroke="var(--border)" />
+                  <PolarAngleAxis
+                    dataKey="metric"
+                    tick={{ fill: "var(--subtitle)", fontSize: 11 }}
+                  />
+                  <PolarRadiusAxis domain={[0, 100]} tick={{ fill: "var(--subtitle)", fontSize: 10 }} />
+                  <Radar
+                    dataKey="value"
+                    stroke="var(--primary)"
+                    fill="var(--primary)"
+                    fillOpacity={0.35}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
             <div className="space-y-3">
               <Bar label="Code Quality" value={result.codeQuality} />
               <Bar label="Performance" value={result.performance} />
@@ -191,17 +245,42 @@ function ReviewPage() {
             </SectionCard>
           )}
 
+          {annotations.length > 0 && (
+            <SectionCard title="Inline Annotations">
+              <p className="mb-2 text-xs text-subtitle">
+                Lines the reviewer flagged, annotated in place.
+              </p>
+              <AnnotatedCode code={code} annotations={annotations} />
+            </SectionCard>
+          )}
+
           <SectionCard
             title="Before vs After"
             action={
-              <button
-                onClick={() => copy(result.fixedCode || result.optimizedCode)}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
-              >
-                <Copy className="h-3 w-3" /> Copy fixed
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setShowDiff((d) => !d)}
+                  className="inline-flex items-center gap-1 rounded-full gradient-green px-3 py-1 text-xs font-semibold text-white shadow-glow"
+                >
+                  <Wand2 className="h-3 w-3" /> {showDiff ? "Hide diff" : "Fix all issues"}
+                </button>
+                <button
+                  onClick={() => copy(result.fixedCode || result.optimizedCode)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  <Copy className="h-3 w-3" /> Copy fixed
+                </button>
+              </div>
             }
           >
+            {showDiff ? (
+              <div>
+                <p className="mb-2 text-xs text-subtitle">
+                  Diff of your code against the fully fixed version.
+                </p>
+                <CodeDiff before={code} after={result.fixedCode || result.optimizedCode} />
+              </div>
+            ) : (
             <div className="space-y-3">
               <div>
                 <p className="mb-1 text-xs font-medium text-subtitle">Before (your code)</p>
@@ -212,6 +291,7 @@ function ReviewPage() {
                 <CodeBlock code={result.fixedCode || result.optimizedCode} />
               </div>
             </div>
+            )}
           </SectionCard>
 
           <SectionCard title="Optimized Code">
