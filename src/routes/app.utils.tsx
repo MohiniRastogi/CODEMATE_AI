@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
