@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Info, Star, Share2, MessageSquare, Shield, FileText, Sun } from "lucide-react";
+import { Info, Star, Share2, MessageSquare, Shield, FileText, Sun, Moon, Check } from "lucide-react";
 import { toast } from "sonner";
+import { ACCENTS, useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/app/settings")({
   head: () => ({
@@ -40,6 +41,7 @@ function Row({
 }
 
 function SettingsPage() {
+  const { mode, accent, setMode, setAccent } = useTheme();
   const share = async () => {
     try {
       await navigator.share?.({
@@ -76,8 +78,54 @@ function SettingsPage() {
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-subtitle">
           Appearance
         </h2>
-        <div className="space-y-2">
-          <Row icon={Sun} label="Theme" value="Light (dark theme coming soon)" onClick={() => toast.info("Only light theme in v1")} />
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-soft">
+          <div>
+            <p className="text-sm font-medium text-foreground">Theme</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(
+                [
+                  { key: "light" as const, label: "Light", icon: Sun },
+                  { key: "dark" as const, label: "Dark", icon: Moon },
+                ]
+              ).map((m) => {
+                const Icon = m.icon;
+                const active = mode === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    onClick={() => setMode(m.key)}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                      active
+                        ? "gradient-blue text-white shadow-glow"
+                        : "border border-border bg-background text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" /> {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">Accent colour</p>
+            <p className="text-xs text-subtitle">Applies across every page and is saved on this device.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.key}
+                  onClick={() => setAccent(a.key)}
+                  aria-label={`${a.label} accent`}
+                  aria-pressed={accent === a.key}
+                  className={`grid h-10 w-10 place-items-center rounded-full text-white transition ${
+                    accent === a.key ? "ring-2 ring-primary ring-offset-2 ring-offset-surface" : ""
+                  }`}
+                  style={{ backgroundImage: a.swatch }}
+                >
+                  {accent === a.key && <Check className="h-4 w-4" />}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
