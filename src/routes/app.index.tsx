@@ -24,6 +24,8 @@ import { memo, useEffect, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
 import { FEATURED_LANGUAGES } from "@/lib/languages";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { SampleOutput } from "@/components/SampleOutput";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
@@ -174,16 +176,19 @@ function Home() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [tip, setTip] = useState(tips[0]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setHistory(storage.getHistory());
     setBookmarkCount(storage.getBookmarks().length);
     setTip(tips[Math.floor(Math.random() * tips.length)]);
+    setLoaded(true);
   }, []);
 
   const recent = history.slice(0, 5);
   const programsGenerated = history.filter((h) => h.kind === "program").length;
   const projectsGenerated = history.filter((h) => h.kind === "project").length;
+  const isNewUser = loaded && history.length === 0 && bookmarkCount === 0;
 
   return (
     <main className="pb-28 pt-[calc(env(safe-area-inset-top)+16px)]">
@@ -196,12 +201,9 @@ function Home() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle />
             <button aria-label="Search" className="grid h-10 w-10 place-items-center rounded-full bg-surface text-foreground shadow-soft">
               <Search className="h-4.5 w-4.5" />
-            </button>
-            <button aria-label="Notifications" className="relative grid h-10 w-10 place-items-center rounded-full bg-surface text-foreground shadow-soft">
-              <Bell className="h-4.5 w-4.5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger" />
             </button>
           </div>
         </header>
@@ -239,12 +241,39 @@ function Home() {
           </div>
         </section>
 
+        {/* First-visit onboarding */}
+        {isNewUser && (
+          <section className="mt-6 rounded-3xl border border-dashed border-primary/40 bg-surface p-5 shadow-soft">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl gradient-blue text-white">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-foreground">Welcome — you&apos;re all set</h2>
+                <p className="mt-1 text-sm leading-relaxed text-subtitle">
+                  Your stats, history and saved items live only on this device in your browser&apos;s local
+                  storage. Nothing is uploaded, and there is no account to create.
+                </p>
+                <Link
+                  to="/app/program"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full gradient-blue px-4 py-2 text-sm font-semibold text-white shadow-glow"
+                >
+                  Generate your first program <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* See an example */}
+        <SampleOutput />
+
         {/* Dashboard stats */}
         <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Your activity summary">
-          <StatCard label="Programs" value={programsGenerated} icon={Code2} gradient="gradient-blue" />
-          <StatCard label="Projects" value={projectsGenerated} icon={Rocket} gradient="gradient-purple" />
-          <StatCard label="Saved" value={bookmarkCount} icon={Bookmark} gradient="gradient-orange" />
-          <StatCard label="Activity" value={history.length} icon={Clock} gradient="gradient-green" />
+          <StatCard label="Programs" value={programsGenerated} icon={Code2} gradient="gradient-blue" empty="No programs yet" />
+          <StatCard label="Projects" value={projectsGenerated} icon={Rocket} gradient="gradient-purple" empty="No projects yet" />
+          <StatCard label="Saved" value={bookmarkCount} icon={Bookmark} gradient="gradient-orange" empty="Nothing saved yet" />
+          <StatCard label="Activity" value={history.length} icon={Clock} gradient="gradient-green" empty="No activity yet" />
         </section>
 
         {/* Quick Actions */}
