@@ -85,6 +85,50 @@
   --shadow-lift: 0 20px 40px -20px rgb(15 23 42 / 0.18);
 }
 
+/* ---- Dark mode ---- */
+.dark {
+  --background: #0b1120;
+  --surface: #111a2e;
+  --foreground: #e2e8f0;
+  --subtitle: #94a3b8;
+  --card: #111a2e;
+  --card-foreground: #e2e8f0;
+  --popover: #111a2e;
+  --popover-foreground: #e2e8f0;
+  --muted: #1c2740;
+  --muted-foreground: #94a3b8;
+  --border: #23304d;
+  --input: #23304d;
+  --shadow-soft: 0 4px 24px -6px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 20px 40px -20px rgb(0 0 0 / 0.7);
+}
+
+/* ---- Accent palettes (remap the brand colour + primary gradient) ---- */
+[data-accent="purple"] {
+  --primary: #7c3aed;
+  --ring: #7c3aed;
+  --gradient-blue: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  --shadow-glow: 0 10px 40px -10px rgb(124 58 237 / 0.35);
+}
+[data-accent="green"] {
+  --primary: #16a34a;
+  --ring: #16a34a;
+  --gradient-blue: linear-gradient(135deg, #16a34a 0%, #14b8a6 100%);
+  --shadow-glow: 0 10px 40px -10px rgb(22 163 74 / 0.35);
+}
+[data-accent="orange"] {
+  --primary: #ea580c;
+  --ring: #ea580c;
+  --gradient-blue: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+  --shadow-glow: 0 10px 40px -10px rgb(234 88 12 / 0.35);
+}
+[data-accent="rose"] {
+  --primary: #e11d48;
+  --ring: #e11d48;
+  --gradient-blue: linear-gradient(135deg, #e11d48 0%, #f472b6 100%);
+  --shadow-glow: 0 10px 40px -10px rgb(225 29 72 / 0.35);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -133,6 +177,10 @@
   backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgb(255 255 255 / 0.5);
 }
+.dark .glass {
+  background-color: rgb(17 26 46 / 0.7);
+  border-color: rgb(35 48 77 / 0.6);
+}
 @utility text-gradient-hero {
   background-image: var(--gradient-hero);
   background-clip: text;
@@ -141,9 +189,9 @@
 @utility shimmer {
   background: linear-gradient(
     90deg,
-    rgba(226, 232, 240, 0.4) 0%,
-    rgba(226, 232, 240, 0.9) 50%,
-    rgba(226, 232, 240, 0.4) 100%
+    color-mix(in oklab, var(--muted) 60%, transparent) 0%,
+    var(--muted) 50%,
+    color-mix(in oklab, var(--muted) 60%, transparent) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
