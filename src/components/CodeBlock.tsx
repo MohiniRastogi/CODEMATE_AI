@@ -1,10 +1,12 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneLight, oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { useTheme } from "@/lib/theme";
 
 export function CodeBlock({ code, language = "text" }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
+  const { mode } = useTheme();
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -31,7 +33,7 @@ export function CodeBlock({ code, language = "text" }: { code: string; language?
       <div className="max-h-[500px] overflow-auto text-sm">
         <SyntaxHighlighter
           language={language}
-          style={oneLight}
+          style={mode === "dark" ? oneDark : oneLight}
           customStyle={{
             margin: 0,
             padding: "16px",
