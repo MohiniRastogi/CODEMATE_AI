@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { BookOpen, Sparkles, Save, FileDown, Copy } from "lucide-react";
+import { BookOpen, Sparkles, Save, FileDown, Copy, Layers, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { generateNotes } from "@/lib/ai.functions";
@@ -106,6 +106,7 @@ export const Route = createFileRoute("/app/notes")({
 
 function NotesPage() {
   const [topic, setTopic] = useState("");
+  const [flashcards, setFlashcards] = useState(false);
   const fn = useServerFn(generateNotes);
   const mutation = useMutation({
     mutationFn: (input: { topic: string }) => fn({ data: input }),
@@ -114,6 +115,46 @@ function NotesPage() {
   });
 
   const result = mutation.data;
+
+  const toMarkdown = () => {
+    if (!result) return "";
+    const lines: string[] = [`# ${topic}`, ""];
+    if (result.definition) lines.push("## Definition", toText(result.definition), "");
+    if (result.explanation) lines.push("## Explanation", toText(result.explanation), "");
+    if ((result.examples ?? []).length)
+      lines.push("## Examples", ...(result.examples ?? []).map((e) => `- ${toText(e)}`), "");
+    if ((result.advantages ?? []).length)
+      lines.push("## Advantages", ...(result.advantages ?? []).map((a) => `- ${toText(a)}`), "");
+    if ((result.disadvantages ?? []).length)
+      lines.push("## Disadvantages", ...(result.disadvantages ?? []).map((a) => `- ${toText(a)}`), "");
+    if ((result.interviewQuestions ?? []).length) {
+      lines.push("## Interview Questions");
+      (result.interviewQuestions ?? []).forEach((qa, i) => {
+        lines.push(`**Q${i + 1}. ${toText(qa?.q)}**`, "", toText(qa?.a), "");
+      });
+    }
+    if ((result.mcqs ?? []).length) {
+      lines.push("## MCQs");
+      (result.mcqs ?? []).forEach((m, i) => {
+        lines.push(`${i + 1}. ${toText(m?.question)}`);
+        (m?.options ?? []).forEach((o) => lines.push(`   - ${toText(o)}`));
+        lines.push(`   **Answer:** ${toText(m?.answer)}`, "");
+      });
+    }
+    if (result.summary) lines.push("## Summary", toText(result.summary), "");
+    return lines.join("\n");
+  };
+
+  const downloadMarkdown = () => {
+    const blob = new Blob([toMarkdown()], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(topic || "notes").replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Markdown downloaded");
+  };
 
   return (
     <FeatureShell
@@ -227,7 +268,30 @@ function NotesPage() {
             </SectionCard>
           )}
           {(result.mcqs ?? []).length > 0 && (
-            <SectionCard title="MCQs">
+            <SectionCard
+              title="MCQs"
+              action={
+                <button
+                  onClick={() => setFlashcards((f) => !f)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
+                    flashcards
+                      ? "gradient-orange text-white shadow-glow"
+                      : "border border-border bg-surface text-foreground"
+                  }`}
+                >
+                  <Layers className="h-3 w-3" /> Flashcard mode
+                </button>
+              }
+            >
+              {flashcards ? (
+                <Flashcards
+                  cards={(result.mcqs ?? []).map((m) => ({
+                    question: toText(m?.question),
+                    options: (m?.options ?? []).map((o) => toText(o)),
+                    answer: toText(m?.answer),
+                  }))}
+                />
+              ) : (
               <div className="space-y-4">
                 {(result.mcqs ?? []).map((m, i) => (
                   <div key={i} className="rounded-xl border border-border p-3">
@@ -249,6 +313,7 @@ function NotesPage() {
                   </div>
                 ))}
               </div>
+              )}
             </SectionCard>
           )}
           {result.summary && (
@@ -280,19 +345,77 @@ function NotesPage() {
               Save
             </button>
             <button
-              disabled
-              className="relative flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-subtitle shadow-soft opacity-60"
+              onClick={downloadMarkdown}
+              className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-surface py-3 text-xs font-medium text-foreground shadow-soft"
             >
-              <FileDown className="h-4 w-4" />
-              PDF
-              <span className="absolute -top-2 right-2 rounded-full gradient-orange px-1.5 py-0.5 text-[9px] font-semibold text-white">
-                Soon
-              </span>
+              <FileDown className="h-4 w-4 text-primary" />
+              Export .md
             </button>
           </div>
         </div>
       )}
     <RelatedTools current="/app/notes" />
     </FeatureShell>
+  );
+}
+
+type Card = { question: string; options: string[]; answer: string };
+
+function Flashcards({ cards }: { cards: Card[] }) {
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  if (cards.length === 0) return null;
+  const card = cards[Math.min(index, cards.length - 1)];
+  const go = (delta: number) => {
+    setRevealed(false);
+    setIndex((i) => (i + delta + cards.length) % cards.length);
+  };
+  return (
+    <div>
+      <p className="mb-2 text-xs font-medium text-subtitle">
+        Card {index + 1} of {cards.length}
+      </p>
+      <button
+        onClick={() => setRevealed((r) => !r)}
+        className="min-h-40 w-full rounded-2xl border border-border bg-background p-5 text-left transition active:scale-[0.99]"
+      >
+        <p className="text-sm font-semibold text-foreground">{card.question}</p>
+        {!revealed ? (
+          <>
+            <ul className="mt-3 space-y-1 text-sm text-subtitle">
+              {card.options.map((o, i) => (
+                <li key={i}>• {o}</li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs font-medium text-primary">Tap to reveal the answer</p>
+          </>
+        ) : (
+          <p className="mt-3 text-sm font-semibold text-success">✓ {card.answer}</p>
+        )}
+      </button>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button
+          onClick={() => go(-1)}
+          className="rounded-2xl border border-border bg-surface py-2.5 text-xs font-medium text-foreground shadow-soft"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => {
+            setIndex(0);
+            setRevealed(false);
+          }}
+          className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface py-2.5 text-xs font-medium text-foreground shadow-soft"
+        >
+          <RotateCcw className="h-3 w-3" /> Restart
+        </button>
+        <button
+          onClick={() => go(1)}
+          className="rounded-2xl gradient-orange py-2.5 text-xs font-semibold text-white shadow-glow"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
