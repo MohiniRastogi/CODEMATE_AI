@@ -52,7 +52,86 @@ const PROJECT_TYPES = ["CLI App", "REST API", "Web App", "Script", "Full-Stack",
 const SIZES = ["Small", "Medium", "Large"];
 const DIFFS = ["Easy", "Medium", "Hard"];
 
+const EXAMPLE_IDEAS = [
+  "Tic Tac Toe game",
+  "Calculator",
+  "To-Do List",
+  "Weather App",
+  "Quiz App",
+  "Number Guessing Game",
+];
+
+const BROWSER_LANGS = ["JavaScript", "TypeScript", "HTML", "CSS"];
+
+/** Smart defaults inferred from the project idea + language. */
+function inferDefaults(idea: string, language: string) {
+  const i = idea.toLowerCase();
+  const isGame = /(game|tic tac toe|tictactoe|snake|puzzle|quiz|guess|hangman|memory|pong)/.test(i);
+  const isApi = /(api|rest|backend|server|endpoint|crud service)/.test(i);
+  const isData = /(data|analysis|chart|scraper|scraping|csv|pandas|ml|machine learning)/.test(i);
+  const isWeb = /(web|website|dashboard|app|tracker|todo|to-do|list|blog|weather|calculator|clock|timer)/.test(i);
+  const browser = BROWSER_LANGS.includes(language);
+
+  const category = isGame
+    ? "Game"
+    : isApi
+      ? "API"
+      : isData
+        ? "Data Science"
+        : isWeb && browser
+          ? "Web App"
+          : browser
+            ? "Web App"
+            : "CLI Tool";
+
+  const projectType = isApi
+    ? "REST API"
+    : browser
+      ? "Web App"
+      : isData
+        ? "Script"
+        : "CLI App";
+
+  const hard = /(full[- ]stack|auth|realtime|real-time|compiler|interpreter|distributed|payment)/.test(i);
+  const difficulty = hard ? "Hard" : isApi || isData ? "Medium" : "Easy";
+  const size = hard ? "Medium" : "Small";
+
+  return { category, projectType, difficulty, size };
+}
+
+/** Build a self-contained HTML document for the sandboxed live preview. */
+function buildPreviewDoc(files: { path: string; content: string }[]) {
+  const html = files.find((f) => /(^|\/)index\.html$/i.test(f.path)) ?? files.find((f) => /\.html$/i.test(f.path));
+  if (!html) return null;
+  const base = html.path.includes("/") ? html.path.slice(0, html.path.lastIndexOf("/") + 1) : "";
+  const find = (ref: string) => {
+    const clean = ref.replace(/^\.\//, "").split(/[?#]/)[0];
+    return (
+      files.find((f) => f.path === base + clean) ??
+      files.find((f) => f.path === clean) ??
+      files.find((f) => f.path.endsWith("/" + clean))
+    );
+  };
+  let doc = html.content;
+  doc = doc.replace(/<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi, (m, href: string) => {
+    const f = find(href);
+    return f ? `<style>\n${f.content}\n</style>` : m;
+  });
+  doc = doc.replace(
+    /<script[^>]*src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi,
+    (m, src: string) => {
+      const f = find(src);
+      return f ? `<script>\n${f.content}\n</script>` : m;
+    },
+  );
+  return doc;
+}
+
 function ProjectPage() {
+  const [idea, setIdea] = useState("");
+  const [ideaError, setIdeaError] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedTouched, setAdvancedTouched] = useState(false);
   const [language, setLanguage] = useState("Python");
   const [framework, setFramework] = useState("None");
   const [category, setCategory] = useState("CLI Tool");
@@ -60,36 +139,84 @@ function ProjectPage() {
   const [difficulty, setDifficulty] = useState("Medium");
   const [size, setSize] = useState("Small");
   const [activeFile, setActiveFile] = useState(0);
+  const [files, setFiles] = useState<{ path: string; content: string }[]>([]);
+  const [projectName, setProjectName] = useState("");
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const fn = useServerFn(generateProject);
+  const regenFileFn = useServerFn(regenerateProjectFile);
 
   const mutation = useMutation({
     mutationFn: (input: {
+      idea: string;
       language: string;
       framework?: string;
-      category: string;
+      category?: string;
       projectType?: string;
-      difficulty: string;
-      size: string;
+      difficulty?: string;
+      size?: string;
     }) => fn({ data: input }),
     onError: (e: Error) => toast.error(e.message),
     onSuccess: (data) => {
-      storage.addHistory({ kind: "project", title: data.projectName, data });
+      const entry = storage.addHistory({ kind: "project", title: data.projectName, data });
+      setHistoryId(entry?.id ?? null);
+      setProjectName(data.projectName);
+      setFiles(data.files ?? []);
       setActiveFile(0);
     },
   });
 
   const result = mutation.data;
-  const currentFile = result?.files?.[activeFile];
+  const currentFile = files[activeFile];
+  const previewDoc = useMemo(() => (files.length ? buildPreviewDoc(files) : null), [files]);
 
-  const run = () =>
+  const regenFile = useMutation({
+    mutationFn: (input: { path: string; currentContent: string }) =>
+      regenFileFn({
+        data: {
+          projectName,
+          idea,
+          language,
+          path: input.path,
+          currentContent: input.currentContent,
+          otherPaths: files.map((f) => f.path).filter((p) => p !== input.path),
+        },
+      }),
+    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (file) => {
+      const next = files.map((f) => (f.path === file.path ? { ...f, content: file.content } : f));
+      setFiles(next);
+      persist(projectName, next);
+      toast.success("File regenerated");
+    },
+  });
+
+  const persist = (name: string, nextFiles: { path: string; content: string }[]) => {
+    if (!historyId || !result) return;
+    storage.updateHistory(historyId, {
+      title: name,
+      data: { ...result, projectName: name, files: nextFiles },
+    });
+  };
+
+  const run = () => {
+    if (!idea.trim()) {
+      setIdeaError("Tell us what you want to build");
+      return;
+    }
+    setIdeaError("");
+    const smart = inferDefaults(idea, language);
     mutation.mutate({
+      idea: idea.trim(),
       language,
       framework: framework === "None" ? undefined : framework,
-      category,
-      projectType,
-      difficulty,
-      size,
+      category: advancedTouched ? category : smart.category,
+      projectType: advancedTouched ? projectType : smart.projectType,
+      difficulty: advancedTouched ? difficulty : smart.difficulty,
+      size: advancedTouched ? size : smart.size,
     });
+  };
 
   const copy = async (text: string) => {
     try {
@@ -100,19 +227,22 @@ function ProjectPage() {
     }
   };
 
+  const copyAll = () =>
+    copy(files.map((f) => `// ===== ${f.path} =====\n${f.content}`).join("\n\n"));
+
   const downloadZip = async () => {
     if (!result) return;
     try {
       const zip = new JSZip();
-      for (const f of result.files ?? []) zip.file(f.path, f.content);
-      if (result.readme && !(result.files ?? []).some((f) => /readme\.md$/i.test(f.path))) {
+      for (const f of files) zip.file(f.path, f.content);
+      if (result.readme && !files.some((f) => /readme\.md$/i.test(f.path))) {
         zip.file("README.md", result.readme);
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${result.projectName.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.zip`;
+      a.download = `${(projectName || "project").replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Project downloaded");
