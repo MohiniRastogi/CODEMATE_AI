@@ -72,6 +72,10 @@ const commonSchema = {
     explanation: z.string(),
     languageDifferences: z.array(z.string()),
   }),
+  file: z.object({
+    path: z.string(),
+    content: z.string(),
+  }),
   interview: z.object({
     question: z.string(),
     answer: z.string(),

@@ -56,6 +56,11 @@ export const storage = {
     const list = this.getHistory().filter((i) => i.id !== id);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
   },
+  updateHistory(id: string, patch: Partial<Pick<HistoryItem, "title" | "data">>) {
+    if (!this.isBrowser()) return;
+    const list = this.getHistory().map((i) => (i.id === id ? { ...i, ...patch } : i));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  },
   clearHistory(kind?: HistoryKind) {
     if (!this.isBrowser()) return;
     if (!kind) {
