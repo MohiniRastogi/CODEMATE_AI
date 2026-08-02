@@ -259,13 +259,75 @@ function ProjectPage() {
       gradient="gradient-purple"
     >
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
-        <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-subtitle">Project idea</span>
+          <input
+            value={idea}
+            onChange={(e) => {
+              setIdea(e.target.value);
+              if (e.target.value.trim()) setIdeaError("");
+            }}
+            placeholder="What do you want to build? e.g. Tic Tac Toe game, Calculator, To-Do List, Weather App, Number Guessing Game"
+            className={`w-full rounded-xl border bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-primary ${
+              ideaError ? "border-danger" : "border-border"
+            }`}
+          />
+        </label>
+        {ideaError ? (
+          <p className="mt-1.5 text-xs font-medium text-danger">{ideaError}</p>
+        ) : (
+          <p className="mt-1.5 text-xs text-subtitle">
+            Be as simple or specific as you like — &ldquo;Tic Tac Toe&rdquo; works, or &ldquo;Tic Tac
+            Toe with score tracking and a reset button&rdquo;.
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-subtitle">Try an example:</span>
+          {EXAMPLE_IDEAS.map((e) => (
+            <button
+              key={e}
+              onClick={() => {
+                setIdea(e);
+                setIdeaError("");
+              }}
+              className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground transition hover:border-primary hover:text-primary"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4">
           <Select label="Language" value={language} onChange={setLanguage} options={LANGUAGES} />
-          <Select label="Framework" value={framework} onChange={setFramework} options={FRAMEWORKS} />
-          <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
-          <Select label="Project Type" value={projectType} onChange={setProjectType} options={PROJECT_TYPES} />
-          <Select label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFS} />
-          <Select label="Size" value={size} onChange={setSize} options={SIZES} />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-border">
+          <button
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="text-sm font-medium text-foreground">Advanced options</span>
+            <span className="flex items-center gap-2 text-xs text-subtitle">
+              {advancedTouched ? "Custom" : "Auto"}
+              <ChevronDown
+                className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+          {advancedOpen && (
+            <div
+              className="grid grid-cols-2 gap-3 border-t border-border p-4"
+              onChange={() => setAdvancedTouched(true)}
+            >
+              <Select label="Framework" value={framework} onChange={setFramework} options={FRAMEWORKS} />
+              <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
+              <Select label="Project Type" value={projectType} onChange={setProjectType} options={PROJECT_TYPES} />
+              <Select label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFS} />
+              <Select label="Size" value={size} onChange={setSize} options={SIZES} />
+            </div>
+          )}
         </div>
         <div className="mt-4">
           <GradientButton gradient="gradient-purple" onClick={run} disabled={mutation.isPending}>
