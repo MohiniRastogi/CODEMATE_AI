@@ -1,11 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { Rocket, Save, Sparkles, Copy, Download, RefreshCw, FileCode2, Folder, FileText } from "lucide-react";
-import { useState } from "react";
+import {
+  Rocket,
+  Save,
+  Sparkles,
+  Copy,
+  Download,
+  RefreshCw,
+  FileCode2,
+  Folder,
+  FileText,
+  ChevronDown,
+  Play,
+  Pencil,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import JSZip from "jszip";
-import { generateProject } from "@/lib/ai.functions";
+import { generateProject, regenerateProjectFile } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import {
   FeatureShell,
