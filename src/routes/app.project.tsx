@@ -1,11 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { Rocket, Save, Sparkles, Copy, Download, RefreshCw, FileCode2, Folder, FileText } from "lucide-react";
-import { useState } from "react";
+import {
+  Rocket,
+  Save,
+  Sparkles,
+  Copy,
+  Download,
+  RefreshCw,
+  FileCode2,
+  Folder,
+  FileText,
+  ChevronDown,
+  Play,
+  Pencil,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import JSZip from "jszip";
-import { generateProject } from "@/lib/ai.functions";
+import { generateProject, regenerateProjectFile } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import {
   FeatureShell,
@@ -39,7 +52,86 @@ const PROJECT_TYPES = ["CLI App", "REST API", "Web App", "Script", "Full-Stack",
 const SIZES = ["Small", "Medium", "Large"];
 const DIFFS = ["Easy", "Medium", "Hard"];
 
+const EXAMPLE_IDEAS = [
+  "Tic Tac Toe game",
+  "Calculator",
+  "To-Do List",
+  "Weather App",
+  "Quiz App",
+  "Number Guessing Game",
+];
+
+const BROWSER_LANGS = ["JavaScript", "TypeScript", "HTML", "CSS"];
+
+/** Smart defaults inferred from the project idea + language. */
+function inferDefaults(idea: string, language: string) {
+  const i = idea.toLowerCase();
+  const isGame = /(game|tic tac toe|tictactoe|snake|puzzle|quiz|guess|hangman|memory|pong)/.test(i);
+  const isApi = /(api|rest|backend|server|endpoint|crud service)/.test(i);
+  const isData = /(data|analysis|chart|scraper|scraping|csv|pandas|ml|machine learning)/.test(i);
+  const isWeb = /(web|website|dashboard|app|tracker|todo|to-do|list|blog|weather|calculator|clock|timer)/.test(i);
+  const browser = BROWSER_LANGS.includes(language);
+
+  const category = isGame
+    ? "Game"
+    : isApi
+      ? "API"
+      : isData
+        ? "Data Science"
+        : isWeb && browser
+          ? "Web App"
+          : browser
+            ? "Web App"
+            : "CLI Tool";
+
+  const projectType = isApi
+    ? "REST API"
+    : browser
+      ? "Web App"
+      : isData
+        ? "Script"
+        : "CLI App";
+
+  const hard = /(full[- ]stack|auth|realtime|real-time|compiler|interpreter|distributed|payment)/.test(i);
+  const difficulty = hard ? "Hard" : isApi || isData ? "Medium" : "Easy";
+  const size = hard ? "Medium" : "Small";
+
+  return { category, projectType, difficulty, size };
+}
+
+/** Build a self-contained HTML document for the sandboxed live preview. */
+function buildPreviewDoc(files: { path: string; content: string }[]) {
+  const html = files.find((f) => /(^|\/)index\.html$/i.test(f.path)) ?? files.find((f) => /\.html$/i.test(f.path));
+  if (!html) return null;
+  const base = html.path.includes("/") ? html.path.slice(0, html.path.lastIndexOf("/") + 1) : "";
+  const find = (ref: string) => {
+    const clean = ref.replace(/^\.\//, "").split(/[?#]/)[0];
+    return (
+      files.find((f) => f.path === base + clean) ??
+      files.find((f) => f.path === clean) ??
+      files.find((f) => f.path.endsWith("/" + clean))
+    );
+  };
+  let doc = html.content;
+  doc = doc.replace(/<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi, (m, href: string) => {
+    const f = find(href);
+    return f ? `<style>\n${f.content}\n</style>` : m;
+  });
+  doc = doc.replace(
+    /<script[^>]*src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi,
+    (m, src: string) => {
+      const f = find(src);
+      return f ? `<script>\n${f.content}\n</script>` : m;
+    },
+  );
+  return doc;
+}
+
 function ProjectPage() {
+  const [idea, setIdea] = useState("");
+  const [ideaError, setIdeaError] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedTouched, setAdvancedTouched] = useState(false);
   const [language, setLanguage] = useState("Python");
   const [framework, setFramework] = useState("None");
   const [category, setCategory] = useState("CLI Tool");
@@ -47,36 +139,84 @@ function ProjectPage() {
   const [difficulty, setDifficulty] = useState("Medium");
   const [size, setSize] = useState("Small");
   const [activeFile, setActiveFile] = useState(0);
+  const [files, setFiles] = useState<{ path: string; content: string }[]>([]);
+  const [projectName, setProjectName] = useState("");
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const fn = useServerFn(generateProject);
+  const regenFileFn = useServerFn(regenerateProjectFile);
 
   const mutation = useMutation({
     mutationFn: (input: {
+      idea: string;
       language: string;
       framework?: string;
-      category: string;
+      category?: string;
       projectType?: string;
-      difficulty: string;
-      size: string;
+      difficulty?: string;
+      size?: string;
     }) => fn({ data: input }),
     onError: (e: Error) => toast.error(e.message),
     onSuccess: (data) => {
-      storage.addHistory({ kind: "project", title: data.projectName, data });
+      const entry = storage.addHistory({ kind: "project", title: data.projectName, data });
+      setHistoryId(entry?.id ?? null);
+      setProjectName(data.projectName);
+      setFiles(arr(data.files));
       setActiveFile(0);
     },
   });
 
   const result = mutation.data;
-  const currentFile = result?.files?.[activeFile];
+  const currentFile = files[activeFile];
+  const previewDoc = useMemo(() => (files.length ? buildPreviewDoc(files) : null), [files]);
 
-  const run = () =>
+  const regenFile = useMutation({
+    mutationFn: (input: { path: string; currentContent: string }) =>
+      regenFileFn({
+        data: {
+          projectName,
+          idea,
+          language,
+          path: input.path,
+          currentContent: input.currentContent,
+          otherPaths: files.map((f) => f.path).filter((p) => p !== input.path),
+        },
+      }),
+    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (file) => {
+      const next = files.map((f) => (f.path === file.path ? { ...f, content: file.content } : f));
+      setFiles(next);
+      persist(projectName, next);
+      toast.success("File regenerated");
+    },
+  });
+
+  const persist = (name: string, nextFiles: { path: string; content: string }[]) => {
+    if (!historyId || !result) return;
+    storage.updateHistory(historyId, {
+      title: name,
+      data: { ...result, projectName: name, files: nextFiles },
+    });
+  };
+
+  const run = () => {
+    if (!idea.trim()) {
+      setIdeaError("Tell us what you want to build");
+      return;
+    }
+    setIdeaError("");
+    const smart = inferDefaults(idea, language);
     mutation.mutate({
+      idea: idea.trim(),
       language,
       framework: framework === "None" ? undefined : framework,
-      category,
-      projectType,
-      difficulty,
-      size,
+      category: advancedTouched ? category : smart.category,
+      projectType: advancedTouched ? projectType : smart.projectType,
+      difficulty: advancedTouched ? difficulty : smart.difficulty,
+      size: advancedTouched ? size : smart.size,
     });
+  };
 
   const copy = async (text: string) => {
     try {
@@ -87,19 +227,22 @@ function ProjectPage() {
     }
   };
 
+  const copyAll = () =>
+    copy(files.map((f) => `// ===== ${f.path} =====\n${f.content}`).join("\n\n"));
+
   const downloadZip = async () => {
     if (!result) return;
     try {
       const zip = new JSZip();
-      for (const f of result.files ?? []) zip.file(f.path, f.content);
-      if (result.readme && !(result.files ?? []).some((f) => /readme\.md$/i.test(f.path))) {
+      for (const f of files) zip.file(f.path, f.content);
+      if (result.readme && !files.some((f) => /readme\.md$/i.test(f.path))) {
         zip.file("README.md", result.readme);
       }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${result.projectName.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.zip`;
+      a.download = `${(projectName || "project").replace(/[^a-z0-9-_]+/gi, "-").toLowerCase()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Project downloaded");
@@ -116,13 +259,75 @@ function ProjectPage() {
       gradient="gradient-purple"
     >
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
-        <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-subtitle">Project idea</span>
+          <input
+            value={idea}
+            onChange={(e) => {
+              setIdea(e.target.value);
+              if (e.target.value.trim()) setIdeaError("");
+            }}
+            placeholder="What do you want to build? e.g. Tic Tac Toe game, Calculator, To-Do List, Weather App, Number Guessing Game"
+            className={`w-full rounded-xl border bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-primary ${
+              ideaError ? "border-danger" : "border-border"
+            }`}
+          />
+        </label>
+        {ideaError ? (
+          <p className="mt-1.5 text-xs font-medium text-danger">{ideaError}</p>
+        ) : (
+          <p className="mt-1.5 text-xs text-subtitle">
+            Be as simple or specific as you like — &ldquo;Tic Tac Toe&rdquo; works, or &ldquo;Tic Tac
+            Toe with score tracking and a reset button&rdquo;.
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-subtitle">Try an example:</span>
+          {EXAMPLE_IDEAS.map((e) => (
+            <button
+              key={e}
+              onClick={() => {
+                setIdea(e);
+                setIdeaError("");
+              }}
+              className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground transition hover:border-primary hover:text-primary"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4">
           <Select label="Language" value={language} onChange={setLanguage} options={LANGUAGES} />
-          <Select label="Framework" value={framework} onChange={setFramework} options={FRAMEWORKS} />
-          <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
-          <Select label="Project Type" value={projectType} onChange={setProjectType} options={PROJECT_TYPES} />
-          <Select label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFS} />
-          <Select label="Size" value={size} onChange={setSize} options={SIZES} />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-border">
+          <button
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="text-sm font-medium text-foreground">Advanced options</span>
+            <span className="flex items-center gap-2 text-xs text-subtitle">
+              {advancedTouched ? "Custom" : "Auto"}
+              <ChevronDown
+                className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+          {advancedOpen && (
+            <div
+              className="grid grid-cols-2 gap-3 border-t border-border p-4"
+              onChange={() => setAdvancedTouched(true)}
+            >
+              <Select label="Framework" value={framework} onChange={setFramework} options={FRAMEWORKS} />
+              <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
+              <Select label="Project Type" value={projectType} onChange={setProjectType} options={PROJECT_TYPES} />
+              <Select label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFS} />
+              <Select label="Size" value={size} onChange={setSize} options={SIZES} />
+            </div>
+          )}
         </div>
         <div className="mt-4">
           <GradientButton gradient="gradient-purple" onClick={run} disabled={mutation.isPending}>
@@ -148,9 +353,59 @@ function ProjectPage() {
         <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
 
-          <SectionCard title={result.projectName}>
+          <SectionCard
+            title="Project"
+            action={
+              <button
+                onClick={() => setRenaming((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Pencil className="h-3 w-3" /> Rename
+              </button>
+            }
+          >
+            {renaming ? (
+              <input
+                autoFocus
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                onBlur={() => {
+                  setRenaming(false);
+                  persist(projectName, files);
+                  toast.success("Project renamed");
+                }}
+                className="mb-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-base font-semibold text-foreground outline-none focus:border-primary"
+              />
+            ) : (
+              <h2 className="mb-2 text-base font-semibold text-foreground">{projectName}</h2>
+            )}
             <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
           </SectionCard>
+
+          {previewDoc && (
+            <SectionCard
+              title="Live Preview"
+              action={
+                <button
+                  onClick={() => setShowPreview((v) => !v)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  <Play className="h-3 w-3" /> {showPreview ? "Hide" : "Run"}
+                </button>
+              }
+            >
+              {showPreview ? (
+                <iframe
+                  title="Project live preview"
+                  srcDoc={previewDoc}
+                  sandbox="allow-scripts allow-modals"
+                  className="h-[420px] w-full rounded-2xl border border-border bg-white"
+                />
+              ) : (
+                <p className="text-sm text-subtitle">Preview hidden.</p>
+              )}
+            </SectionCard>
+          )}
 
           <SectionCard
             title="Project Structure"
@@ -164,10 +419,8 @@ function ProjectPage() {
             }
           >
             <FileTree
-              paths={(result.files ?? []).map((f) => f.path)}
-              onSelect={(p) =>
-                setActiveFile(Math.max(0, (result.files ?? []).findIndex((f) => f.path === p)))
-              }
+              paths={files.map((f) => f.path)}
+              onSelect={(p) => setActiveFile(Math.max(0, files.findIndex((f) => f.path === p)))}
             />
             {result.folderStructure && (
               <details className="mt-3">
@@ -181,9 +434,19 @@ function ProjectPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Files">
+          <SectionCard
+            title="Files"
+            action={
+              <button
+                onClick={copyAll}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Copy className="h-3 w-3" /> Copy all
+              </button>
+            }
+          >
             <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1">
-              {(result.files ?? []).map((f, i) => (
+              {files.map((f, i) => (
                 <button
                   key={f.path + i}
                   onClick={() => setActiveFile(i)}
@@ -208,7 +471,13 @@ function ProjectPage() {
                     label="Download ZIP"
                     onClick={downloadZip}
                   />
-                  <ActionButton icon={RefreshCw} label="Regenerate" onClick={run} />
+                  <ActionButton
+                    icon={RefreshCw}
+                    label={regenFile.isPending ? "Working..." : "Regenerate File"}
+                    onClick={() =>
+                      regenFile.mutate({ path: currentFile.path, currentContent: currentFile.content })
+                    }
+                  />
                 </div>
               </>
             )}
@@ -222,7 +491,7 @@ function ProjectPage() {
 
           <SectionCard title="Dependencies">
             <div className="flex flex-wrap gap-2">
-              {(result.dependencies ?? []).map((d) => (
+              {arr(result.dependencies).map((d) => (
                 <span
                   key={d}
                   className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
@@ -233,10 +502,10 @@ function ProjectPage() {
             </div>
           </SectionCard>
 
-          {(result.envVariables ?? []).length > 0 && (
+          {arr(result.envVariables).length > 0 && (
             <SectionCard title="Environment Variables">
               <ul className="space-y-2">
-                {(result.envVariables ?? []).map((e, i) => (
+                {arr(result.envVariables).map((e, i) => (
                   <li key={i} className="text-sm text-foreground">
                     <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{e.key}</code>
                     <span className="ml-2 text-xs text-subtitle">{e.description}</span>
@@ -250,7 +519,7 @@ function ProjectPage() {
 
           <SectionCard title="Installation">
             <ol className="space-y-2">
-              {(result.installation ?? []).map((s, i) => (
+              {arr(result.installation).map((s, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="font-mono text-xs text-subtitle">{i + 1}.</span>
                   <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{s}</code>
@@ -261,7 +530,7 @@ function ProjectPage() {
 
           <SectionCard title="Execution Steps">
             <ol className="space-y-2">
-              {(result.execution ?? []).map((s, i) => (
+              {arr(result.execution).map((s, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="font-mono text-xs text-subtitle">{i + 1}.</span>
                   <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{s}</code>
@@ -272,7 +541,7 @@ function ProjectPage() {
 
           <SectionCard title="Features">
             <ul className="space-y-2">
-              {(result.features ?? []).map((f, i) => (
+              {arr(result.features).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-success">✓</span>
                   {f}
@@ -289,7 +558,7 @@ function ProjectPage() {
 
           <SectionCard title="Future Scope">
             <ul className="space-y-2">
-              {(result.futureScope ?? []).map((f, i) => (
+              {arr(result.futureScope).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-primary">→</span>
                   {f}
@@ -300,7 +569,11 @@ function ProjectPage() {
 
           <button
             onClick={() => {
-              storage.addBookmark({ kind: "project", title: result.projectName, data: result });
+              storage.addBookmark({
+                kind: "project",
+                title: projectName,
+                data: { ...result, projectName, files },
+              });
               toast.success("Saved to bookmarks");
             }}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
@@ -315,6 +588,10 @@ function ProjectPage() {
     </FeatureShell>
 
   );
+}
+
+function arr<T>(v: T[] | undefined | null): T[] {
+  return Array.isArray(v) ? v : [];
 }
 
 function extLang(path: string, fallback: string) {
