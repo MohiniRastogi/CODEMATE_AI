@@ -162,7 +162,7 @@ function ProjectPage() {
       const entry = storage.addHistory({ kind: "project", title: data.projectName, data });
       setHistoryId(entry?.id ?? null);
       setProjectName(data.projectName);
-      setFiles(data.files ?? []);
+      setFiles(arr(data.files));
       setActiveFile(0);
     },
   });
@@ -491,7 +491,7 @@ function ProjectPage() {
 
           <SectionCard title="Dependencies">
             <div className="flex flex-wrap gap-2">
-              {(result.dependencies ?? []).map((d) => (
+              {arr(result.dependencies).map((d) => (
                 <span
                   key={d}
                   className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
@@ -502,10 +502,10 @@ function ProjectPage() {
             </div>
           </SectionCard>
 
-          {(result.envVariables ?? []).length > 0 && (
+          {arr(result.envVariables).length > 0 && (
             <SectionCard title="Environment Variables">
               <ul className="space-y-2">
-                {(result.envVariables ?? []).map((e, i) => (
+                {arr(result.envVariables).map((e, i) => (
                   <li key={i} className="text-sm text-foreground">
                     <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{e.key}</code>
                     <span className="ml-2 text-xs text-subtitle">{e.description}</span>
@@ -519,7 +519,7 @@ function ProjectPage() {
 
           <SectionCard title="Installation">
             <ol className="space-y-2">
-              {(result.installation ?? []).map((s, i) => (
+              {arr(result.installation).map((s, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="font-mono text-xs text-subtitle">{i + 1}.</span>
                   <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{s}</code>
@@ -530,7 +530,7 @@ function ProjectPage() {
 
           <SectionCard title="Execution Steps">
             <ol className="space-y-2">
-              {(result.execution ?? []).map((s, i) => (
+              {arr(result.execution).map((s, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="font-mono text-xs text-subtitle">{i + 1}.</span>
                   <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{s}</code>
@@ -541,7 +541,7 @@ function ProjectPage() {
 
           <SectionCard title="Features">
             <ul className="space-y-2">
-              {(result.features ?? []).map((f, i) => (
+              {arr(result.features).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-success">✓</span>
                   {f}
@@ -558,7 +558,7 @@ function ProjectPage() {
 
           <SectionCard title="Future Scope">
             <ul className="space-y-2">
-              {(result.futureScope ?? []).map((f, i) => (
+              {arr(result.futureScope).map((f, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-primary">→</span>
                   {f}
@@ -588,6 +588,10 @@ function ProjectPage() {
     </FeatureShell>
 
   );
+}
+
+function arr<T>(v: T[] | undefined | null): T[] {
+  return Array.isArray(v) ? v : [];
 }
 
 function extLang(path: string, fallback: string) {
