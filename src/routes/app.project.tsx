@@ -569,7 +569,11 @@ function ProjectPage() {
 
           <button
             onClick={() => {
-              storage.addBookmark({ kind: "project", title: result.projectName, data: result });
+              storage.addBookmark({
+                kind: "project",
+                title: projectName,
+                data: { ...result, projectName, files },
+              });
               toast.success("Saved to bookmarks");
             }}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
