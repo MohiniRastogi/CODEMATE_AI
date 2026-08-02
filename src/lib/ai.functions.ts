@@ -155,23 +155,30 @@ Also return:
 export const generateProject = createServerFn({ method: "POST" })
   .inputValidator(
     (d: {
+      idea: string;
       language: string;
       framework?: string;
-      category: string;
-      difficulty: string;
-      size: string;
+      category?: string;
+      difficulty?: string;
+      size?: string;
       projectType?: string;
     }) => d,
   )
   .handler(async ({ data }) => {
     return runStructured(
       commonSchema.project,
-      `Design a ${data.size}, ${data.difficulty} ${data.language} mini project${
-        data.framework ? ` using ${data.framework}` : ""
-      } in the ${data.category} category${data.projectType ? ` (${data.projectType})` : ""}.
+      `Build a complete, working ${data.language} mini project for this idea: "${data.idea}".
+${data.framework ? `Framework: ${data.framework}.\n` : ""}${data.category ? `Category: ${data.category}.\n` : ""}${data.projectType ? `Project type: ${data.projectType}.\n` : ""}${data.difficulty ? `Difficulty: ${data.difficulty}.\n` : ""}${data.size ? `Size: ${data.size}.\n` : ""}
+For anything not specified above, infer sensible values yourself from the idea and the language.
+
+CORRECTNESS IS THE PRIORITY. The code must actually implement the idea and run as-is:
+- No placeholders, no TODOs, no "implement this" stubs, no truncated files.
+- Implement the real logic (e.g. Tic Tac Toe needs genuine win/draw detection; a Calculator must handle operator precedence or clear sequential evaluation plus divide-by-zero; a quiz must score correctly).
+- Handle obvious edge cases and invalid input.
+- If the language is JavaScript/TypeScript/HTML/CSS and the idea is a game, calculator, or simple web app, produce a browser-runnable project with an index.html at the project root plus real CSS and JS so it can be opened directly in a browser. Reference stylesheets/scripts with relative paths (style.css, script.js) and avoid build steps or external CDNs.
 
 Return a REAL, GitHub-repository-style project:
-- projectName: creative, specific.
+- projectName: creative, specific, clearly matching the idea.
 - description: 2-3 sentences.
 - folderStructure: ASCII project tree of every file listed below.
 - files: array of SEPARATE files, EACH with { path, content }. NEVER merge multiple files into one entry. Include the entry file, config, models/routes/helpers as appropriate, requirements/package manifest, .env.example and README.md. Every file's content must be complete and runnable.
@@ -183,7 +190,38 @@ Return a REAL, GitHub-repository-style project:
 - execution: ordered run/test commands.
 - features: 5-8 bullet points.
 - futureScope: 3-5 future improvements.`,
-      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects that look like real GitHub repositories.",
+      "You are a senior engineer producing complete, cleanly-structured multi-file mini projects that look like real GitHub repositories. Every file you write must be finished, logically correct and runnable — never scaffolding.",
+    );
+  });
+
+// Regenerate a single file of an existing project
+export const regenerateProjectFile = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: {
+      projectName: string;
+      idea: string;
+      language: string;
+      path: string;
+      currentContent: string;
+      otherPaths: string[];
+      instruction?: string;
+    }) => d,
+  )
+  .handler(async ({ data }) => {
+    return runStructured(
+      commonSchema.file,
+      `Project "${data.projectName}" (${data.language}) built for the idea: "${data.idea}".
+Other files in the project: ${data.otherPaths.join(", ") || "(none)"}.
+
+Rewrite ONLY the file "${data.path}". ${data.instruction ?? "Improve correctness, completeness and comments while keeping the same responsibility and staying compatible with the other files."}
+
+Current content:
+\`\`\`
+${data.currentContent}
+\`\`\`
+
+Return { path, content }. Keep the same path. content must be the complete file — no placeholders or TODOs.`,
+      "You are a senior engineer rewriting a single file of an existing project. Stay consistent with the rest of the codebase.",
     );
   });
 
