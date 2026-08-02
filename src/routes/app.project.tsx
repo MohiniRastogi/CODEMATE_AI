@@ -353,9 +353,59 @@ function ProjectPage() {
         <FeatureErrorBoundary onReset={run}>
         <div className="mt-5 space-y-4">
 
-          <SectionCard title={result.projectName}>
+          <SectionCard
+            title="Project"
+            action={
+              <button
+                onClick={() => setRenaming((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Pencil className="h-3 w-3" /> Rename
+              </button>
+            }
+          >
+            {renaming ? (
+              <input
+                autoFocus
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                onBlur={() => {
+                  setRenaming(false);
+                  persist(projectName, files);
+                  toast.success("Project renamed");
+                }}
+                className="mb-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-base font-semibold text-foreground outline-none focus:border-primary"
+              />
+            ) : (
+              <h2 className="mb-2 text-base font-semibold text-foreground">{projectName}</h2>
+            )}
             <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
           </SectionCard>
+
+          {previewDoc && (
+            <SectionCard
+              title="Live Preview"
+              action={
+                <button
+                  onClick={() => setShowPreview((v) => !v)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  <Play className="h-3 w-3" /> {showPreview ? "Hide" : "Run"}
+                </button>
+              }
+            >
+              {showPreview ? (
+                <iframe
+                  title="Project live preview"
+                  srcDoc={previewDoc}
+                  sandbox="allow-scripts allow-modals"
+                  className="h-[420px] w-full rounded-2xl border border-border bg-white"
+                />
+              ) : (
+                <p className="text-sm text-subtitle">Preview hidden.</p>
+              )}
+            </SectionCard>
+          )}
 
           <SectionCard
             title="Project Structure"
@@ -369,10 +419,8 @@ function ProjectPage() {
             }
           >
             <FileTree
-              paths={(result.files ?? []).map((f) => f.path)}
-              onSelect={(p) =>
-                setActiveFile(Math.max(0, (result.files ?? []).findIndex((f) => f.path === p)))
-              }
+              paths={files.map((f) => f.path)}
+              onSelect={(p) => setActiveFile(Math.max(0, files.findIndex((f) => f.path === p)))}
             />
             {result.folderStructure && (
               <details className="mt-3">
@@ -386,9 +434,19 @@ function ProjectPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Files">
+          <SectionCard
+            title="Files"
+            action={
+              <button
+                onClick={copyAll}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+              >
+                <Copy className="h-3 w-3" /> Copy all
+              </button>
+            }
+          >
             <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1">
-              {(result.files ?? []).map((f, i) => (
+              {files.map((f, i) => (
                 <button
                   key={f.path + i}
                   onClick={() => setActiveFile(i)}
@@ -413,7 +471,13 @@ function ProjectPage() {
                     label="Download ZIP"
                     onClick={downloadZip}
                   />
-                  <ActionButton icon={RefreshCw} label="Regenerate" onClick={run} />
+                  <ActionButton
+                    icon={RefreshCw}
+                    label={regenFile.isPending ? "Working..." : "Regenerate File"}
+                    onClick={() =>
+                      regenFile.mutate({ path: currentFile.path, currentContent: currentFile.content })
+                    }
+                  />
                 </div>
               </>
             )}
