@@ -172,6 +172,14 @@ function ProjectPage() {
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [previewKey, setPreviewKey] = useState(0);
+  const [testResults, setTestResults] = useState<
+    { name: string; passed: boolean; error: string }[] | null
+  >(null);
+  const [runningTests, setRunningTests] = useState(false);
+  const testFrame = useRef<HTMLIFrameElement>(null);
   const fn = useServerFn(generateProject);
   const regenFileFn = useServerFn(regenerateProjectFile);
 
@@ -190,14 +198,51 @@ function ProjectPage() {
       const entry = storage.addHistory({ kind: "project", title: data.projectName, data });
       setHistoryId(entry?.id ?? null);
       setProjectName(data.projectName);
-      setFiles(arr(data.files));
+      setFiles([...arr(data.files), ...arr(data.testFiles)]);
       setActiveFile(0);
+      setEditing(false);
+      setTestResults(null);
+      setPreviewKey((k) => k + 1);
     },
   });
 
   const result = mutation.data;
   const currentFile = files[activeFile];
   const previewDoc = useMemo(() => (files.length ? buildPreviewDoc(files) : null), [files]);
+  const browserTests = arr(result?.browserTests);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { __codemateTests?: { name: string; passed: boolean; error: string }[] };
+      if (data && Array.isArray(data.__codemateTests)) {
+        setTestResults(data.__codemateTests);
+        setRunningTests(false);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  const runTests = () => {
+    if (!browserTests.length) return;
+    setRunningTests(true);
+    setTestResults(null);
+    const frame = testFrame.current;
+    if (frame) frame.srcdoc = buildTestDoc(files, browserTests);
+    window.setTimeout(() => setRunningTests(false), 6000);
+  };
+
+  const saveEdit = () => {
+    if (!currentFile) return;
+    const next = files.map((f, i) => (i === activeFile ? { ...f, content: draft } : f));
+    setFiles(next);
+    persist(projectName, next);
+    setEditing(false);
+    setPreviewKey((k) => k + 1);
+    setTestResults(null);
+    setShowPreview(true);
+    toast.success("File saved — preview refreshed");
+  };
 
   const regenFile = useMutation({
     mutationFn: (input: { path: string; currentContent: string }) =>
