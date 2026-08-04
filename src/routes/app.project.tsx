@@ -533,7 +533,10 @@ function ProjectPage() {
               {files.map((f, i) => (
                 <button
                   key={f.path + i}
-                  onClick={() => setActiveFile(i)}
+                  onClick={() => {
+                    setActiveFile(i);
+                    setEditing(false);
+                  }}
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     i === activeFile
                       ? "gradient-purple text-white shadow-glow"
