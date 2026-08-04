@@ -429,12 +429,22 @@ function ProjectPage() {
           <SectionCard
             title="Project"
             action={
-              <button
-                onClick={() => setRenaming((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
-              >
-                <Pencil className="h-3 w-3" /> Rename
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setRenaming((v) => !v)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  <Pencil className="h-3 w-3" /> Rename
+                </button>
+                <button
+                  onClick={run}
+                  disabled={mutation.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-3 w-3 ${mutation.isPending ? "animate-spin" : ""}`} />
+                  {mutation.isPending ? "Regenerating..." : "Regenerate project"}
+                </button>
+              </div>
             }
           >
             {renaming ? (
@@ -469,6 +479,7 @@ function ProjectPage() {
             >
               {showPreview ? (
                 <iframe
+                  key={previewKey}
                   title="Project live preview"
                   srcDoc={previewDoc}
                   sandbox="allow-scripts allow-modals"
