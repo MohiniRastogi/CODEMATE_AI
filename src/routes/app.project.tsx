@@ -14,8 +14,11 @@ import {
   ChevronDown,
   Play,
   Pencil,
+  FlaskConical,
+  Check,
+  X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { generateProject, regenerateProjectFile } from "@/lib/ai.functions";
@@ -127,6 +130,31 @@ function buildPreviewDoc(files: { path: string; content: string }[]) {
   return doc;
 }
 
+/** Build a sandboxed document that runs the project's browser tests and reports results. */
+function buildTestDoc(
+  files: { path: string; content: string }[],
+  tests: { name: string; code: string }[],
+) {
+  const js = files
+    .filter((f) => /\.m?js$/i.test(f.path))
+    .map((f) => f.content)
+    .join("\n;\n");
+  const payload = JSON.stringify(tests);
+  return `<!doctype html><html><body><div id="app"></div><script>
+try { ${js} } catch (e) { /* setup errors surface per test */ }
+var __tests = ${payload};
+var __results = __tests.map(function (t) {
+  try {
+    (0, eval)(t.code);
+    return { name: t.name, passed: true, error: "" };
+  } catch (e) {
+    return { name: t.name, passed: false, error: (e && e.message) || String(e) };
+  }
+});
+parent.postMessage({ __codemateTests: __results }, "*");
+<\/script></body></html>`;
+}
+
 function ProjectPage() {
   const [idea, setIdea] = useState("");
   const [ideaError, setIdeaError] = useState("");
@@ -144,6 +172,14 @@ function ProjectPage() {
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [previewKey, setPreviewKey] = useState(0);
+  const [testResults, setTestResults] = useState<
+    { name: string; passed: boolean; error: string }[] | null
+  >(null);
+  const [runningTests, setRunningTests] = useState(false);
+  const testFrame = useRef<HTMLIFrameElement>(null);
   const fn = useServerFn(generateProject);
   const regenFileFn = useServerFn(regenerateProjectFile);
 
@@ -162,14 +198,51 @@ function ProjectPage() {
       const entry = storage.addHistory({ kind: "project", title: data.projectName, data });
       setHistoryId(entry?.id ?? null);
       setProjectName(data.projectName);
-      setFiles(arr(data.files));
+      setFiles([...arr(data.files), ...arr(data.testFiles)]);
       setActiveFile(0);
+      setEditing(false);
+      setTestResults(null);
+      setPreviewKey((k) => k + 1);
     },
   });
 
   const result = mutation.data;
   const currentFile = files[activeFile];
   const previewDoc = useMemo(() => (files.length ? buildPreviewDoc(files) : null), [files]);
+  const browserTests = arr(result?.browserTests);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { __codemateTests?: { name: string; passed: boolean; error: string }[] };
+      if (data && Array.isArray(data.__codemateTests)) {
+        setTestResults(data.__codemateTests);
+        setRunningTests(false);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  const runTests = () => {
+    if (!browserTests.length) return;
+    setRunningTests(true);
+    setTestResults(null);
+    const frame = testFrame.current;
+    if (frame) frame.srcdoc = buildTestDoc(files, browserTests);
+    window.setTimeout(() => setRunningTests(false), 6000);
+  };
+
+  const saveEdit = () => {
+    if (!currentFile) return;
+    const next = files.map((f, i) => (i === activeFile ? { ...f, content: draft } : f));
+    setFiles(next);
+    persist(projectName, next);
+    setEditing(false);
+    setPreviewKey((k) => k + 1);
+    setTestResults(null);
+    setShowPreview(true);
+    toast.success("File saved — preview refreshed");
+  };
 
   const regenFile = useMutation({
     mutationFn: (input: { path: string; currentContent: string }) =>
@@ -356,12 +429,22 @@ function ProjectPage() {
           <SectionCard
             title="Project"
             action={
-              <button
-                onClick={() => setRenaming((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
-              >
-                <Pencil className="h-3 w-3" /> Rename
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setRenaming((v) => !v)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  <Pencil className="h-3 w-3" /> Rename
+                </button>
+                <button
+                  onClick={run}
+                  disabled={mutation.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-3 w-3 ${mutation.isPending ? "animate-spin" : ""}`} />
+                  {mutation.isPending ? "Regenerating..." : "Regenerate project"}
+                </button>
+              </div>
             }
           >
             {renaming ? (
@@ -396,6 +479,7 @@ function ProjectPage() {
             >
               {showPreview ? (
                 <iframe
+                  key={previewKey}
                   title="Project live preview"
                   srcDoc={previewDoc}
                   sandbox="allow-scripts allow-modals"
@@ -449,7 +533,10 @@ function ProjectPage() {
               {files.map((f, i) => (
                 <button
                   key={f.path + i}
-                  onClick={() => setActiveFile(i)}
+                  onClick={() => {
+                    setActiveFile(i);
+                    setEditing(false);
+                  }}
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     i === activeFile
                       ? "gradient-purple text-white shadow-glow"
@@ -463,8 +550,42 @@ function ProjectPage() {
             </div>
             {currentFile && (
               <>
-                <CodeBlock code={currentFile.content} language={extLang(currentFile.path, language)} />
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                {editing ? (
+                  <div className="rounded-2xl border border-border bg-surface p-3">
+                    <textarea
+                      autoFocus
+                      spellCheck={false}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      className="h-[380px] w-full resize-y rounded-xl border border-border bg-background p-3 font-mono text-xs leading-relaxed text-foreground outline-none focus:border-primary"
+                    />
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={saveEdit}
+                        className="gradient-purple inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-white shadow-glow"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Save &amp; refresh preview
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <CodeBlock code={currentFile.content} language={extLang(currentFile.path, language)} />
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <ActionButton
+                    icon={Pencil}
+                    label={editing ? "Editing" : "Edit File"}
+                    onClick={() => {
+                      setDraft(currentFile.content);
+                      setEditing(true);
+                    }}
+                  />
                   <ActionButton icon={Copy} label="Copy File" onClick={() => copy(currentFile.content)} />
                   <ActionButton
                     icon={Download}
@@ -482,6 +603,79 @@ function ProjectPage() {
               </>
             )}
           </SectionCard>
+
+          {(browserTests.length > 0 || arr(result.testFiles).length > 0) && (
+            <SectionCard
+              title="Tests"
+              action={
+                browserTests.length > 0 ? (
+                  <button
+                    onClick={runTests}
+                    disabled={runningTests}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                  >
+                    <FlaskConical className="h-3 w-3" /> {runningTests ? "Running..." : "Run tests"}
+                  </button>
+                ) : undefined
+              }
+            >
+              {testResults && (
+                <div className="mb-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs text-success">
+                      {testResults.filter((t) => t.passed).length} passed
+                    </span>
+                    <span className="rounded-full bg-danger/10 px-2.5 py-0.5 text-xs text-danger">
+                      {testResults.filter((t) => !t.passed).length} failed
+                    </span>
+                    <span className="text-xs font-normal text-subtitle">
+                      of {testResults.length} test cases
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {testResults.map((t, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                        {t.passed ? (
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                        ) : (
+                          <X className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                        )}
+                        <span>
+                          {t.name}
+                          {!t.passed && t.error && (
+                            <span className="block text-xs text-subtitle">{t.error}</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {!testResults && browserTests.length > 0 && (
+                <p className="mb-3 text-sm text-subtitle">
+                  {browserTests.length} test cases ready — run them to see a pass/fail summary.
+                </p>
+              )}
+              {arr(result.testFiles).length > 0 && (
+                <p className="text-xs text-subtitle">
+                  Unit test files ({arr(result.testFiles).map((f) => f.path).join(", ")}) are included
+                  in the file list and the ZIP.
+                  {result.testCommand ? (
+                    <>
+                      {" "}Run them locally with{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{result.testCommand}</code>.
+                    </>
+                  ) : null}
+                </p>
+              )}
+              <iframe
+                ref={testFrame}
+                title="Test runner"
+                sandbox="allow-scripts"
+                className="hidden"
+              />
+            </SectionCard>
+          )}
 
           {result.databaseSchema && result.databaseSchema.trim().length > 0 && (
             <SectionCard title="Database Schema">

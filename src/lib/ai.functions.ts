@@ -32,6 +32,9 @@ const commonSchema = {
     execution: z.array(z.string()),
     features: z.array(z.string()),
     futureScope: z.array(z.string()),
+    testFiles: z.array(z.object({ path: z.string(), content: z.string() })),
+    testCommand: z.string(),
+    browserTests: z.array(z.object({ name: z.string(), code: z.string() })),
   }),
   review: z.object({
     overallScore: z.number(),
@@ -189,7 +192,12 @@ Return a REAL, GitHub-repository-style project:
 - installation: ordered shell commands.
 - execution: ordered run/test commands.
 - features: 5-8 bullet points.
-- futureScope: 3-5 future improvements.`,
+- futureScope: 3-5 future improvements.
+
+TESTS (required):
+- testFiles: 1-3 real unit test files for the project's core logic, using the idiomatic test framework for the language (pytest, JUnit, Jest, go test, etc.). Complete and runnable, with their own { path, content }. Do NOT repeat them inside "files".
+- testCommand: the single shell command that runs those tests (e.g. "pytest", "npm test").
+- browserTests: 4-8 SMALL JavaScript assertion snippets that can run in a browser against the project's own script files. Each { name, code } where code is plain JS that throws an Error when the test fails and returns normally when it passes. They may only call functions/variables the project's JS defines globally, or re-implement pure logic inline. Return an empty array ONLY when the project has no browser-runnable JavaScript.`,
       "You are a senior engineer producing complete, cleanly-structured multi-file mini projects that look like real GitHub repositories. Every file you write must be finished, logically correct and runnable — never scaffolding.",
     );
   });
