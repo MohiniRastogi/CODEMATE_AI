@@ -14,8 +14,11 @@ import {
   ChevronDown,
   Play,
   Pencil,
+  FlaskConical,
+  Check,
+  X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { generateProject, regenerateProjectFile } from "@/lib/ai.functions";
@@ -125,6 +128,31 @@ function buildPreviewDoc(files: { path: string; content: string }[]) {
     },
   );
   return doc;
+}
+
+/** Build a sandboxed document that runs the project's browser tests and reports results. */
+function buildTestDoc(
+  files: { path: string; content: string }[],
+  tests: { name: string; code: string }[],
+) {
+  const js = files
+    .filter((f) => /\.m?js$/i.test(f.path))
+    .map((f) => f.content)
+    .join("\n;\n");
+  const payload = JSON.stringify(tests);
+  return `<!doctype html><html><body><div id="app"></div><script>
+try { ${js} } catch (e) { /* setup errors surface per test */ }
+var __tests = ${payload};
+var __results = __tests.map(function (t) {
+  try {
+    (0, eval)(t.code);
+    return { name: t.name, passed: true, error: "" };
+  } catch (e) {
+    return { name: t.name, passed: false, error: (e && e.message) || String(e) };
+  }
+});
+parent.postMessage({ __codemateTests: __results }, "*");
+<\/script></body></html>`;
 }
 
 function ProjectPage() {
