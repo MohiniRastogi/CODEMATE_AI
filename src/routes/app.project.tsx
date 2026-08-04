@@ -547,8 +547,42 @@ function ProjectPage() {
             </div>
             {currentFile && (
               <>
-                <CodeBlock code={currentFile.content} language={extLang(currentFile.path, language)} />
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                {editing ? (
+                  <div className="rounded-2xl border border-border bg-surface p-3">
+                    <textarea
+                      autoFocus
+                      spellCheck={false}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      className="h-[380px] w-full resize-y rounded-xl border border-border bg-background p-3 font-mono text-xs leading-relaxed text-foreground outline-none focus:border-primary"
+                    />
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={saveEdit}
+                        className="gradient-purple inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-white shadow-glow"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Save &amp; refresh preview
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <CodeBlock code={currentFile.content} language={extLang(currentFile.path, language)} />
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <ActionButton
+                    icon={Pencil}
+                    label={editing ? "Editing" : "Edit File"}
+                    onClick={() => {
+                      setDraft(currentFile.content);
+                      setEditing(true);
+                    }}
+                  />
                   <ActionButton icon={Copy} label="Copy File" onClick={() => copy(currentFile.content)} />
                   <ActionButton
                     icon={Download}
@@ -566,6 +600,79 @@ function ProjectPage() {
               </>
             )}
           </SectionCard>
+
+          {(browserTests.length > 0 || arr(result.testFiles).length > 0) && (
+            <SectionCard
+              title="Tests"
+              action={
+                browserTests.length > 0 ? (
+                  <button
+                    onClick={runTests}
+                    disabled={runningTests}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                  >
+                    <FlaskConical className="h-3 w-3" /> {runningTests ? "Running..." : "Run tests"}
+                  </button>
+                ) : undefined
+              }
+            >
+              {testResults && (
+                <div className="mb-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs text-success">
+                      {testResults.filter((t) => t.passed).length} passed
+                    </span>
+                    <span className="rounded-full bg-danger/10 px-2.5 py-0.5 text-xs text-danger">
+                      {testResults.filter((t) => !t.passed).length} failed
+                    </span>
+                    <span className="text-xs font-normal text-subtitle">
+                      of {testResults.length} test cases
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {testResults.map((t, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                        {t.passed ? (
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                        ) : (
+                          <X className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                        )}
+                        <span>
+                          {t.name}
+                          {!t.passed && t.error && (
+                            <span className="block text-xs text-subtitle">{t.error}</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {!testResults && browserTests.length > 0 && (
+                <p className="mb-3 text-sm text-subtitle">
+                  {browserTests.length} test cases ready — run them to see a pass/fail summary.
+                </p>
+              )}
+              {arr(result.testFiles).length > 0 && (
+                <p className="text-xs text-subtitle">
+                  Unit test files ({arr(result.testFiles).map((f) => f.path).join(", ")}) are included
+                  in the file list and the ZIP.
+                  {result.testCommand ? (
+                    <>
+                      {" "}Run them locally with{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{result.testCommand}</code>.
+                    </>
+                  ) : null}
+                </p>
+              )}
+              <iframe
+                ref={testFrame}
+                title="Test runner"
+                sandbox="allow-scripts"
+                className="hidden"
+              />
+            </SectionCard>
+          )}
 
           {result.databaseSchema && result.databaseSchema.trim().length > 0 && (
             <SectionCard title="Database Schema">
