@@ -56,7 +56,7 @@ function Onboarding() {
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <div className="flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top)+16px)]">
-        <span className="font-mono text-lg font-bold text-gradient-hero">{`<> CodeMateAI`}</span>
+        <Logo className="scale-95" />
         <button onClick={finish} className="text-sm font-medium text-subtitle">
           Skip
         </button>
