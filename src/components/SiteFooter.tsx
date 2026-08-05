@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { FEATURED_LANGUAGES } from "@/lib/languages";
 import { UTILS } from "@/lib/devtools";
+import { LogoMark } from "@/components/Logo";
 
 const AI_TOOLS = [
   { to: "/app/program", label: "AI Code Generator" },
@@ -23,11 +24,9 @@ export function SiteFooter() {
       <div className="grid grid-cols-2 gap-x-4 gap-y-7 md:grid-cols-4">
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-xl gradient-blue text-white">
-              <Sparkles className="h-4 w-4" />
-            </span>
+            <LogoMark className="size-8" />
             <h2 id="footer-title" className="text-sm font-semibold text-foreground">
-              CodeMateAI
+              CodeMate AI
             </h2>
           </div>
           <p className="mt-2 text-xs leading-relaxed text-subtitle">

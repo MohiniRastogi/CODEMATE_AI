@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Info, Star, Share2, MessageSquare, Shield, FileText, Sun, Moon, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ACCENTS, useTheme } from "@/lib/theme";
+import { LogoMark } from "@/components/Logo";
 
 export const Route = createFileRoute("/app/settings")({
   head: () => ({
