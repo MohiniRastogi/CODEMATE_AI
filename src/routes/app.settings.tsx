@@ -7,7 +7,7 @@ import { LogoMark } from "@/components/Logo";
 export const Route = createFileRoute("/app/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — CodeMateAI" },
+      { title: "Settings — CodeMate AI" },
       { name: "description", content: "App preferences, theme and about." },
     ],
   }),
@@ -46,7 +46,7 @@ function SettingsPage() {
   const share = async () => {
     try {
       await navigator.share?.({
-        title: "CodeMateAI",
+        title: "CodeMate AI",
         text: "Your Personal AI Coding Companion",
         url: typeof window !== "undefined" ? window.location.origin : "",
       });

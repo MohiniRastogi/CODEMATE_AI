@@ -8,10 +8,10 @@ import { Logo } from "@/components/Logo";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Welcome to CodeMateAI" },
+      { title: "Welcome to CodeMate AI" },
       {
         name: "description",
-        content: "Get started with CodeMateAI — generate code, learn faster and build projects with AI.",
+        content: "Get started with CodeMate AI — generate code, learn faster and build projects with AI.",
       },
     ],
   }),

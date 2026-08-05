@@ -33,7 +33,7 @@ export const Route = createFileRoute("/app/program")({
   }),
   head: ({ match }) => {
     const lang = resolveLanguage(match.search?.language);
-    const title = `${lang.name} Code Generator — Program Generator | CodeMateAI`;
+    const title = `${lang.name} Code Generator — Program Generator | CodeMate AI`;
     const description = `Free online ${lang.name} Code Generator. Generate ${lang.name} code with line-by-line explanations, complexity analysis and best practices.`;
     return {
       meta: [
@@ -352,7 +352,7 @@ function ProgramPage() {
               label="Share"
               onClick={async () => {
                 try {
-                  await navigator.share?.({ title: "CodeMateAI", text: activeCode });
+                  await navigator.share?.({ title: "CodeMate AI", text: activeCode });
                 } catch {
                   copy(activeCode);
                 }
@@ -392,7 +392,7 @@ function ProgramPage() {
       <div className="mt-10 space-y-4">
         <SeoBlock
           title="What is an AI Code Generator?"
-          body="An AI Code Generator is a tool that turns natural-language prompts into working source code. CodeMateAI uses large language models to generate clean, production-quality programs in any popular language, letting you write code online without leaving your browser."
+          body="An AI Code Generator is a tool that turns natural-language prompts into working source code. CodeMate AI uses large language models to generate clean, production-quality programs in any popular language, letting you write code online without leaving your browser."
         />
         <SeoBlock
           title="How does the AI Program Generator work?"

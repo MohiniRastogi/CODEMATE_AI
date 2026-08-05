@@ -82,14 +82,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#2563EB" },
-      { title: "CodeMateAI — Your Personal AI Coding Companion" },
+      { title: "CodeMate AI — Your Personal AI Coding Companion" },
       {
         name: "description",
         content:
           "Generate code, review code, prepare for interviews, build mini projects and solve daily coding challenges with AI.",
       },
-      { name: "author", content: "CodeMateAI" },
-      { property: "og:title", content: "CodeMateAI — Your Personal AI Coding Companion" },
+      { name: "author", content: "CodeMate AI" },
+      { property: "og:title", content: "CodeMate AI — Your Personal AI Coding Companion" },
       {
         property: "og:description",
         content:

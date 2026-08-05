@@ -14,13 +14,13 @@ import { RelatedTools } from "@/components/RelatedTools";
 export const Route = createFileRoute("/app/interview")({
   head: () => ({
     meta: [
-      { title: "Interview Preparation — CodeMateAI" },
+      { title: "Interview Preparation — CodeMate AI" },
       {
         name: "description",
         content:
           "Practice interview preparation questions across Python, Java, DBMS, OS, Computer Networks, OOPS, HR and JavaScript with model answers and follow-ups.",
       },
-      { property: "og:title", content: "Interview Preparation — CodeMateAI" },
+      { property: "og:title", content: "Interview Preparation — CodeMate AI" },
       {
         property: "og:description",
         content: "Role-based programming interview questions with model answers, examples, tips and follow-ups.",

@@ -13,7 +13,7 @@ import { CodeBlock } from "@/components/CodeBlock";
 export const Route = createFileRoute("/app/convert")({
   head: () => ({
     meta: [
-      { title: "Code Converter — CodeMateAI" },
+      { title: "Code Converter — CodeMate AI" },
       {
         name: "description",
         content: "Translate code between languages with AI-powered explanations of the differences.",
@@ -148,7 +148,7 @@ function ConvertPage() {
             <button
               onClick={async () => {
                 try {
-                  await navigator.share?.({ title: "CodeMateAI", text: result.convertedCode });
+                  await navigator.share?.({ title: "CodeMate AI", text: result.convertedCode });
                 } catch {
                   navigator.clipboard.writeText(result.convertedCode);
                   toast.success("Copied");

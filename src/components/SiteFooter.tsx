@@ -68,7 +68,7 @@ export function SiteFooter() {
 
       <div className="mt-8 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <p className="text-[11px] text-subtitle">© 2026 CodeMateAI · Version 1.0</p>
+          <p className="text-[11px] text-subtitle">© 2026 CodeMate AI · Version 1.0</p>
           <p className="text-[11px] text-subtitle">Made with ❤️ by Mohini Rastogi</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

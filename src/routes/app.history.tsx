@@ -8,8 +8,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/history")({
   head: () => ({
     meta: [
-      { title: "History — CodeMateAI" },
-      { name: "description", content: "Everything you've generated with CodeMateAI, all in one place." },
+      { title: "History — CodeMate AI" },
+      { name: "description", content: "Everything you've generated with CodeMate AI, all in one place." },
     ],
   }),
   component: HistoryPage,

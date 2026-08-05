@@ -29,13 +29,13 @@ import { SampleOutput } from "@/components/SampleOutput";
 export const Route = createFileRoute("/app/")({
   head: () => ({
     meta: [
-      { title: "AI Code Generator & Developer Toolkit — CodeMateAI" },
+      { title: "AI Code Generator & Developer Toolkit — CodeMate AI" },
       {
         name: "description",
         content:
           "Use the AI Code Generator, Program Generator, AI Code Reviewer, Mini Project Generator and Code Converter to write, review and ship production-ready code faster.",
       },
-      { property: "og:title", content: "AI Code Generator & Developer Toolkit — CodeMateAI" },
+      { property: "og:title", content: "AI Code Generator & Developer Toolkit — CodeMate AI" },
       {
         property: "og:description",
         content:
@@ -194,7 +194,7 @@ function Home() {
       <div className="mx-auto max-w-2xl px-5">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
           <div className="min-w-0">
-            <p className="text-sm text-subtitle">👋 Welcome to CodeMateAI</p>
+            <p className="text-sm text-subtitle">👋 Welcome to CodeMate AI</p>
             <p className="mt-0.5 truncate text-xl font-bold text-foreground">
               Let&apos;s build something amazing today.
             </p>
@@ -326,9 +326,9 @@ function Home() {
           </div>
         </section>
 
-        {/* Why CodeMateAI */}
+        {/* Why CodeMate AI */}
         <section className="mt-8" aria-labelledby="why-title">
-          <SectionHeading id="why-title">Why CodeMateAI</SectionHeading>
+          <SectionHeading id="why-title">Why CodeMate AI</SectionHeading>
           <p className="mb-3 text-sm leading-relaxed text-subtitle">
             One workspace replaces a dozen tabs: write a function, review what you already shipped, scaffold a
             mini project, translate it into another language and revise your programming notes before an
@@ -350,9 +350,9 @@ function Home() {
           </div>
         </section>
 
-        {/* How CodeMateAI Works */}
+        {/* How CodeMate AI Works */}
         <section className="mt-8" aria-labelledby="how-title">
-          <SectionHeading id="how-title">How CodeMateAI Works</SectionHeading>
+          <SectionHeading id="how-title">How CodeMate AI Works</SectionHeading>
           <ol className="space-y-3">
             {STEPS.map((s) => (
               <li

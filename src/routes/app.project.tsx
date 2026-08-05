@@ -37,7 +37,7 @@ import { CodeBlock } from "@/components/CodeBlock";
 export const Route = createFileRoute("/app/project")({
   head: () => ({
     meta: [
-      { title: "Mini Project Generator — CodeMateAI" },
+      { title: "Mini Project Generator — CodeMate AI" },
       {
         name: "description",
         content:

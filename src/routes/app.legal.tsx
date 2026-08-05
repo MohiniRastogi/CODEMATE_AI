@@ -6,7 +6,7 @@ const DOCS = {
   privacy: {
     name: "Privacy Policy",
     body: [
-      "CodeMateAI stores your generation history and bookmarks on your own device using browser storage. We do not keep a server-side copy of your prompts or generated code.",
+      "CodeMate AI stores your generation history and bookmarks on your own device using browser storage. We do not keep a server-side copy of your prompts or generated code.",
       "Prompts you submit are sent to an AI provider solely to produce a response. They are not used to build a profile of you and are not sold or shared with advertisers.",
       "Clearing your browser storage — or using the Clear History action in Settings — permanently removes your local data.",
     ],
@@ -14,7 +14,7 @@ const DOCS = {
   terms: {
     name: "Terms of Service",
     body: [
-      "CodeMateAI is provided as-is for educational and productivity purposes. AI-generated code may contain mistakes, so always review and test it before using it in production.",
+      "CodeMate AI is provided as-is for educational and productivity purposes. AI-generated code may contain mistakes, so always review and test it before using it in production.",
       "You are responsible for the prompts you submit and for complying with the licences of any code you ship.",
       "We may adjust or limit access to features to keep the service available for everyone.",
     ],
@@ -41,8 +41,8 @@ export const Route = createFileRoute("/app/legal")({
   }),
   head: ({ match }) => {
     const doc = DOCS[resolveDoc(match.search?.doc)];
-    const title = `${doc.name} — CodeMateAI`;
-    const description = `${doc.name} for CodeMateAI, the AI-powered developer toolkit.`;
+    const title = `${doc.name} — CodeMate AI`;
+    const description = `${doc.name} for CodeMate AI, the AI-powered developer toolkit.`;
     return {
       meta: [
         { title },
@@ -63,7 +63,7 @@ function LegalPage() {
   return (
     <FeatureShell
       title={active.name}
-      subtitle="CodeMateAI policies and support"
+      subtitle="CodeMate AI policies and support"
       icon={FileText}
       gradient="gradient-purple"
     >

@@ -6,10 +6,10 @@ import { LogoMark } from "@/components/Logo";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CodeMateAI — Launching your coding companion" },
+      { title: "CodeMate AI — Launching your coding companion" },
       {
         name: "description",
-        content: "CodeMateAI is loading. Your personal AI coding companion is starting up.",
+        content: "CodeMate AI is loading. Your personal AI coding companion is starting up.",
       },
     ],
   }),

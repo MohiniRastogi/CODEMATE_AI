@@ -94,7 +94,7 @@ function SafeValue({ value }: { value: Unknown }): ReactNode {
 export const Route = createFileRoute("/app/notes")({
   head: () => ({
     meta: [
-      { title: "Notes Generator — CodeMateAI" },
+      { title: "Notes Generator — CodeMate AI" },
       {
         name: "description",
         content: "Generate detailed study notes with examples, MCQs and interview questions on any topic.",
