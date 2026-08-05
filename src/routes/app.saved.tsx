@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/saved")({
   head: () => ({
     meta: [
-      { title: "Saved — CodeMateAI" },
+      { title: "Saved — CodeMate AI" },
       { name: "description", content: "Your bookmarked programs, notes, projects and interview questions." },
     ],
   }),

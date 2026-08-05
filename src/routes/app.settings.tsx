@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Info, Star, Share2, MessageSquare, Shield, FileText, Sun, Moon, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ACCENTS, useTheme } from "@/lib/theme";
+import { LogoMark } from "@/components/Logo";
 
 export const Route = createFileRoute("/app/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — CodeMateAI" },
+      { title: "Settings — CodeMate AI" },
       { name: "description", content: "App preferences, theme and about." },
     ],
   }),
@@ -45,7 +46,7 @@ function SettingsPage() {
   const share = async () => {
     try {
       await navigator.share?.({
-        title: "CodeMateAI",
+        title: "CodeMate AI",
         text: "Your Personal AI Coding Companion",
         url: typeof window !== "undefined" ? window.location.origin : "",
       });
@@ -65,10 +66,10 @@ function SettingsPage() {
       <section className="mt-6 rounded-3xl gradient-hero p-5 text-white shadow-lift">
         <div className="flex items-center gap-3">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/25 backdrop-blur">
-            <span className="font-mono text-lg font-bold">{`<>`}</span>
+            <LogoMark variant="mono-light" className="size-7" />
           </div>
           <div>
-            <p className="text-lg font-bold">CodeMateAI</p>
+            <p className="text-lg font-bold">CodeMate AI</p>
             <p className="text-xs opacity-90">Version 1.0.0</p>
           </div>
         </div>

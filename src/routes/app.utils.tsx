@@ -11,7 +11,7 @@ export const Route = createFileRoute("/app/utils")({
   }),
   head: ({ match }) => {
     const tool = resolveUtil(match.search?.tool);
-    const title = `${tool.name} — Developer Utilities | CodeMateAI`;
+    const title = `${tool.name} — Developer Utilities | CodeMate AI`;
     const description = `Free online ${tool.name}. Fast, private developer utilities that run entirely in your browser.`;
     return {
       meta: [

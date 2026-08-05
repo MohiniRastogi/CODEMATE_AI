@@ -3,14 +3,15 @@ import { useState } from "react";
 import { Sparkles, GraduationCap, Rocket, ArrowRight } from "lucide-react";
 import { storage } from "@/lib/storage";
 import { GradientButton } from "@/components/FeatureShell";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Welcome to CodeMateAI" },
+      { title: "Welcome to CodeMate AI" },
       {
         name: "description",
-        content: "Get started with CodeMateAI — generate code, learn faster and build projects with AI.",
+        content: "Get started with CodeMate AI — generate code, learn faster and build projects with AI.",
       },
     ],
   }),
@@ -56,7 +57,7 @@ function Onboarding() {
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <div className="flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top)+16px)]">
-        <span className="font-mono text-lg font-bold text-gradient-hero">{`<> CodeMateAI`}</span>
+        <Logo className="scale-95" />
         <button onClick={finish} className="text-sm font-medium text-subtitle">
           Skip
         </button>

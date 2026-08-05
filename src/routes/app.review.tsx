@@ -25,7 +25,7 @@ import { CodeDiff } from "@/components/CodeDiff";
 export const Route = createFileRoute("/app/review")({
   head: () => ({
     meta: [
-      { title: "AI Code Reviewer — CodeMateAI" },
+      { title: "AI Code Reviewer — CodeMate AI" },
       {
         name: "description",
         content:
