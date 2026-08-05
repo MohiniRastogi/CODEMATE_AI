@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { storage } from "@/lib/storage";
+import { LogoMark } from "@/components/Logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,10 +48,10 @@ function Splash() {
       <div className="relative z-10 animate-in fade-in zoom-in-95 duration-700 text-center">
         <div className="mx-auto flex items-center justify-center gap-3">
           <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white/25 backdrop-blur-xl shadow-2xl">
-            <span className="font-mono text-3xl font-bold text-white">{`<>`}</span>
+            <LogoMark variant="mono-light" className="size-9" />
           </div>
         </div>
-        <h1 className="mt-5 text-4xl font-bold tracking-tight text-white">CodeMateAI</h1>
+        <h1 className="mt-5 text-4xl font-bold tracking-tight text-white">CodeMate AI</h1>
         <p className="mt-2 text-sm font-medium text-white/85">
           Your Personal AI Coding Companion
         </p>
