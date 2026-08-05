@@ -65,10 +65,10 @@ function SettingsPage() {
       <section className="mt-6 rounded-3xl gradient-hero p-5 text-white shadow-lift">
         <div className="flex items-center gap-3">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/25 backdrop-blur">
-            <span className="font-mono text-lg font-bold">{`<>`}</span>
+            <LogoMark variant="mono-light" className="size-7" />
           </div>
           <div>
-            <p className="text-lg font-bold">CodeMateAI</p>
+            <p className="text-lg font-bold">CodeMate AI</p>
             <p className="text-xs opacity-90">Version 1.0.0</p>
           </div>
         </div>
