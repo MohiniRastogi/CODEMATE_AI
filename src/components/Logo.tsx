@@ -1,18 +1,18 @@
 import { cn } from "@/lib/utils";
-import markAsset from "@/assets/codemate-mark.png.asset.json";
+import appIconAsset from "@/assets/codemate-app-icon.png.asset.json";
 
 type MarkProps = {
   className?: string;
-  /** "gradient" (default), "mono-dark" or "mono-light" */
+  /** Retained for API compatibility; the mark is always the app icon. */
   variant?: "gradient" | "mono-dark" | "mono-light";
   title?: string;
 };
 
-/** CodeMate AI brand mark — robot inside code brackets. */
+/** CodeMate AI brand mark — hexagon code icon with blue-to-purple gradient and AI sparkles. */
 export function LogoMark({ className, title = "CodeMate AI" }: MarkProps) {
   return (
     <img
-      src={markAsset.url}
+      src={appIconAsset.url}
       alt={title}
       width={48}
       height={48}
