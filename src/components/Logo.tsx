@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import appIconAsset from "@/assets/codemate-app-icon.png.asset.json";
+
+const APP_ICON_SRC = "/codemate-app-icon.png";
 
 type MarkProps = {
   className?: string;
@@ -12,7 +13,7 @@ type MarkProps = {
 export function LogoMark({ className, title = "CodeMate AI" }: MarkProps) {
   return (
     <img
-      src={appIconAsset.url}
+      src={APP_ICON_SRC}
       alt={title}
       width={48}
       height={48}
