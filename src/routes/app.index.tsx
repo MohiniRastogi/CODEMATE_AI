@@ -19,9 +19,10 @@ import {
   GraduationCap,
   Lock,
 } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
-import { FEATURED_LANGUAGES } from "@/lib/languages";
+import { FEATURED_LANGUAGES, LANGUAGE_CONFIGS } from "@/lib/languages";
+import { UTILS } from "@/lib/devtools";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SampleOutput } from "@/components/SampleOutput";
@@ -195,6 +196,24 @@ function Home() {
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [tip, setTip] = useState(tips[0]);
   const [loaded, setLoaded] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const q = query.trim().toLowerCase();
+  const searching = q.length > 0;
+
+  const results = useMemo(() => {
+    if (!q) return { tools: [], languages: [], utils: [], total: 0 };
+    const tools = TOOLS.filter(
+      (t) => t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.languages.toLowerCase().includes(q),
+    );
+    const languages = LANGUAGE_CONFIGS.filter(
+      (l) => l.name.toLowerCase().includes(q) || l.slug.includes(q) || l.desc.toLowerCase().includes(q),
+    );
+    const utils = UTILS.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.slug.includes(q) || u.category.toLowerCase().includes(q),
+    );
+    return { tools, languages, utils, total: tools.length + languages.length + utils.length };
+  }, [q]);
 
   useEffect(() => {
     setHistory(storage.getHistory());
@@ -220,11 +239,90 @@ function Home() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
-            <button aria-label="Search" className="grid h-10 w-10 place-items-center rounded-full bg-surface text-foreground shadow-soft">
-              <Search className="h-4.5 w-4.5" />
-            </button>
           </div>
         </header>
+
+        {/* Tool search */}
+        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-border bg-surface px-3 py-2 shadow-soft">
+          <Search className="h-4 w-4 shrink-0 text-subtitle" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search tools…"
+            aria-label="Search tools"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-subtitle"
+          />
+          {searching && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-subtitle"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {searching && (
+          <section className="mt-4" aria-label="Search results">
+            {results.total === 0 ? (
+              <div className="rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
+                <p className="text-sm font-medium text-foreground">No tools found</p>
+                <p className="mt-1 text-sm text-subtitle">
+                  Nothing matches “{query}”. Try another keyword like “sql”, “convert” or “regex”.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {results.tools.length > 0 && (
+                  <div>
+                    <SectionHeading>AI Tools</SectionHeading>
+                    <div className="grid grid-cols-1 gap-2">
+                      {results.tools.map((t) => (
+                        <Link key={t.title} to={t.to} className={resultClass}>
+                          <span className="text-sm font-semibold text-foreground">{t.title}</span>
+                          <span className="text-xs leading-snug text-subtitle">{t.desc}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {results.languages.length > 0 && (
+                  <div>
+                    <SectionHeading>Generators</SectionHeading>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {results.languages.map((l) => (
+                        <Link key={l.slug} to="/app/program" search={{ language: l.slug }} className={resultClass}>
+                          <span className="text-sm font-semibold text-foreground">
+                            <span aria-hidden="true">{l.emoji}</span> {l.name} Generator
+                          </span>
+                          <span className="text-xs leading-snug text-subtitle">{l.desc}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {results.utils.length > 0 && (
+                  <div>
+                    <SectionHeading>Utilities</SectionHeading>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {results.utils.map((u) => (
+                        <Link key={u.slug} to="/app/utils" search={{ tool: u.slug }} className={resultClass}>
+                          <span className="text-sm font-semibold text-foreground">{u.name}</span>
+                          <span className="text-xs leading-snug text-subtitle">{u.category}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!searching && (
+          <>
 
         {/* Hero */}
         <section className="relative mt-5 overflow-hidden rounded-3xl shadow-lift" aria-labelledby="hero-title">
@@ -447,12 +545,18 @@ function Home() {
           </div>
         </div>
 
+          </>
+        )}
+
         <SiteFooter />
 
       </div>
     </main>
   );
 }
+
+const resultClass =
+  "flex flex-col gap-0.5 rounded-2xl border border-border bg-surface p-3 shadow-soft transition active:scale-[0.99]";
 
 function SectionHeading({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
