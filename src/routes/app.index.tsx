@@ -25,6 +25,7 @@ import { FEATURED_LANGUAGES } from "@/lib/languages";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SampleOutput } from "@/components/SampleOutput";
+import { canonicalUrl, SITE_URL } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
@@ -40,6 +41,24 @@ export const Route = createFileRoute("/app/")({
         property: "og:description",
         content:
           "AI-powered coding companion — Program Generator, AI Code Reviewer, Mini Project Generator, Code Converter and Notes Generator in one place.",
+      },
+      { property: "og:url", content: canonicalUrl("/app") },
+    ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app") }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "CodeMate AI",
+          url: `${SITE_URL}/app`,
+          applicationCategory: "DeveloperApplication",
+          operatingSystem: "Any (web browser)",
+          description:
+            "AI Code Generator, Program Generator, AI Code Reviewer, Mini Project Generator, Code Converter, Notes Generator and developer utilities in one web app.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        }),
       },
     ],
   }),

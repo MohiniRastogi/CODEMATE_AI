@@ -20,6 +20,7 @@ import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
 import { AnnotatedCode, extractLine, type Annotation } from "@/components/AnnotatedCode";
 import { CodeDiff } from "@/components/CodeDiff";
+import { canonicalUrl } from "@/lib/seo";
 
 
 export const Route = createFileRoute("/app/review")({
@@ -31,7 +32,9 @@ export const Route = createFileRoute("/app/review")({
         content:
           "AI code review with scores for quality, performance, security and complexity, bug explanations, best practices and before/after comparison.",
       },
+      { property: "og:url", content: canonicalUrl("/app/review") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/review") }],
   }),
   component: ReviewPage,
 });

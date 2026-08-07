@@ -4,12 +4,14 @@ import { Bookmark, Trash2 } from "lucide-react";
 import { storage, type BookmarkItem, type HistoryKind } from "@/lib/storage";
 import { EmptyState } from "@/components/FeatureShell";
 import { toast } from "sonner";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/saved")({
   head: () => ({
     meta: [
       { title: "Saved — CodeMate AI" },
       { name: "description", content: "Your bookmarked programs, notes, projects and interview questions." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: SavedPage,

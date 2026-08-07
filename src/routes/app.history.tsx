@@ -4,12 +4,14 @@ import { Search, Trash2, History as HistoryIcon } from "lucide-react";
 import { storage, type HistoryItem, type HistoryKind } from "@/lib/storage";
 import { EmptyState } from "@/components/FeatureShell";
 import { toast } from "sonner";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/history")({
   head: () => ({
     meta: [
       { title: "History — CodeMate AI" },
       { name: "description", content: "Everything you've generated with CodeMate AI, all in one place." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: HistoryPage,

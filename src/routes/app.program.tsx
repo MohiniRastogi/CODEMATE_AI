@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { generateProgram } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { LANGUAGE_NAMES, resolveLanguage } from "@/lib/languages";
+import { canonicalUrl } from "@/lib/seo";
 import {
   FeatureShell,
   GradientButton,
@@ -35,18 +36,23 @@ export const Route = createFileRoute("/app/program")({
     const lang = resolveLanguage(match.search?.language);
     const title = `${lang.name} Code Generator — Program Generator | CodeMate AI`;
     const description = `Free online ${lang.name} Code Generator. Generate ${lang.name} code with line-by-line explanations, complexity analysis and best practices.`;
+    const url = canonicalUrl(
+      match.search?.language ? `/app/program?language=${lang.slug}` : "/app/program",
+    );
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:url", content: url },
       {
         name: "keywords",
         content:
           "AI Code Generator, Program Generator, Online Code Generator, Python Code Generator, Java Code Generator, C Program Generator, Programming Code Generator, Generate Code with AI, Write Code Online, Code Generator Tool",
       },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   component: ProgramPage,

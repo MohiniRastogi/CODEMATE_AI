@@ -10,6 +10,7 @@ import { FeatureShell, GradientButton, LoadingShimmer, SectionCard, EmptyState }
 import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
 import { SafeValue, toArray, toText } from "@/components/SafeRender";
 import { RelatedTools } from "@/components/RelatedTools";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/interview")({
   head: () => ({
@@ -25,7 +26,9 @@ export const Route = createFileRoute("/app/interview")({
         property: "og:description",
         content: "Role-based programming interview questions with model answers, examples, tips and follow-ups.",
       },
+      { property: "og:url", content: canonicalUrl("/app/interview") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/interview") }],
   }),
   component: InterviewPage,
 });

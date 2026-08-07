@@ -2,14 +2,43 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { storage } from "@/lib/storage";
 import { LogoMark } from "@/components/Logo";
+import { canonicalUrl, SITE_URL } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CodeMate AI — Launching your coding companion" },
+      { title: "CodeMate AI — Free AI Code Generator & Developer Toolkit" },
       {
         name: "description",
-        content: "CodeMate AI is loading. Your personal AI coding companion is starting up.",
+        content:
+          "CodeMate AI is a free AI coding companion: generate code in 14+ languages, review code, build mini projects, convert code and prepare for interviews.",
+      },
+      {
+        property: "og:title",
+        content: "CodeMate AI — Free AI Code Generator & Developer Toolkit",
+      },
+      {
+        property: "og:description",
+        content:
+          "Generate, review and convert code with AI, build mini projects and prepare for interviews — free, in your browser.",
+      },
+      { property: "og:url", content: canonicalUrl("/") },
+    ],
+    links: [{ rel: "canonical", href: canonicalUrl("/") }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "CodeMate AI",
+          url: SITE_URL,
+          applicationCategory: "DeveloperApplication",
+          operatingSystem: "Any (web browser)",
+          description:
+            "Free AI coding companion — AI Code Generator, Code Reviewer, Mini Project Generator, Code Converter, Notes Generator and interview preparation.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        }),
       },
     ],
   }),

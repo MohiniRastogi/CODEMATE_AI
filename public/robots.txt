@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Private, user-specific pages — no value in search results
+Disallow: /app/history
+Disallow: /app/saved
+Disallow: /app/settings
+Disallow: /onboarding
+
+Sitemap: https://codemateai.devorbitx.site/sitemap.xml
