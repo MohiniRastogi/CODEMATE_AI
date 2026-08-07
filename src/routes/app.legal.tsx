@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileText } from "lucide-react";
+import { canonicalUrl } from "@/lib/seo";
 import { FeatureShell, SectionCard } from "@/components/FeatureShell";
 
 const DOCS = {
