@@ -545,12 +545,18 @@ function Home() {
           </div>
         </div>
 
+          </>
+        )}
+
         <SiteFooter />
 
       </div>
     </main>
   );
 }
+
+const resultClass =
+  "flex flex-col gap-0.5 rounded-2xl border border-border bg-surface p-3 shadow-soft transition active:scale-[0.99]";
 
 function SectionHeading({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
