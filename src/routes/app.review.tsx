@@ -20,6 +20,7 @@ import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
 import { AnnotatedCode, extractLine, type Annotation } from "@/components/AnnotatedCode";
 import { CodeDiff } from "@/components/CodeDiff";
+import { canonicalUrl } from "@/lib/seo";
 
 
 export const Route = createFileRoute("/app/review")({

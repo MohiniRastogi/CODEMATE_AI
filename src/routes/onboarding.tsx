@@ -4,6 +4,7 @@ import { Sparkles, GraduationCap, Rocket, ArrowRight } from "lucide-react";
 import { storage } from "@/lib/storage";
 import { GradientButton } from "@/components/FeatureShell";
 import { Logo } from "@/components/Logo";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({

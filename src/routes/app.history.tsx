@@ -4,6 +4,7 @@ import { Search, Trash2, History as HistoryIcon } from "lucide-react";
 import { storage, type HistoryItem, type HistoryKind } from "@/lib/storage";
 import { EmptyState } from "@/components/FeatureShell";
 import { toast } from "sonner";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/history")({
   head: () => ({

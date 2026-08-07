@@ -10,6 +10,7 @@ import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/com
 import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
 import type { ReactNode } from "react";
+import { canonicalUrl } from "@/lib/seo";
 
 type Unknown = unknown;
 

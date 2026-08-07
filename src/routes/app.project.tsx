@@ -32,6 +32,7 @@ import {
 import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
 import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+import { canonicalUrl } from "@/lib/seo";
 
 
 export const Route = createFileRoute("/app/project")({

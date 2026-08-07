@@ -4,6 +4,7 @@ import { Bookmark, Trash2 } from "lucide-react";
 import { storage, type BookmarkItem, type HistoryKind } from "@/lib/storage";
 import { EmptyState } from "@/components/FeatureShell";
 import { toast } from "sonner";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/saved")({
   head: () => ({

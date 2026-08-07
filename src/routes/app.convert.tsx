@@ -9,6 +9,7 @@ import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
 import { RelatedTools } from "@/components/RelatedTools";
 import { CodeBlock } from "@/components/CodeBlock";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/convert")({
   head: () => ({

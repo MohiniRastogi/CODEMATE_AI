@@ -3,6 +3,7 @@ import { Info, Star, Share2, MessageSquare, Shield, FileText, Sun, Moon, Check }
 import { toast } from "sonner";
 import { ACCENTS, useTheme } from "@/lib/theme";
 import { LogoMark } from "@/components/Logo";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/settings")({
   head: () => ({

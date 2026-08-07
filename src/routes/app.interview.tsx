@@ -10,6 +10,7 @@ import { FeatureShell, GradientButton, LoadingShimmer, SectionCard, EmptyState }
 import { ErrorCard, FeatureErrorBoundary } from "@/components/FeatureError";
 import { SafeValue, toArray, toText } from "@/components/SafeRender";
 import { RelatedTools } from "@/components/RelatedTools";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/interview")({
   head: () => ({
