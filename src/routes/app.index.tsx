@@ -19,9 +19,10 @@ import {
   GraduationCap,
   Lock,
 } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
-import { FEATURED_LANGUAGES } from "@/lib/languages";
+import { FEATURED_LANGUAGES, LANGUAGE_CONFIGS } from "@/lib/languages";
+import { UTILS } from "@/lib/devtools";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SampleOutput } from "@/components/SampleOutput";
