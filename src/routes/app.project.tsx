@@ -44,7 +44,11 @@ export const Route = createFileRoute("/app/project")({
         content:
           "Generate complete multi-file mini projects with README, folder structure, dependencies, database schema and source code.",
       },
+      { property: "og:title", content: "Mini Project Generator — CodeMate AI" },
+      { property: "og:description", content: "Generate complete multi-file mini projects with README, folder structure, dependencies, database schema and source code." },
+      { property: "og:url", content: canonicalUrl("/app/project") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/project") }],
   }),
   component: ProjectPage,
 });

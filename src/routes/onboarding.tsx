@@ -14,6 +14,7 @@ export const Route = createFileRoute("/onboarding")({
         name: "description",
         content: "Get started with CodeMate AI — generate code, learn faster and build projects with AI.",
       },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: Onboarding,

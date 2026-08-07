@@ -32,7 +32,9 @@ export const Route = createFileRoute("/app/review")({
         content:
           "AI code review with scores for quality, performance, security and complexity, bug explanations, best practices and before/after comparison.",
       },
+      { property: "og:url", content: canonicalUrl("/app/review") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/review") }],
   }),
   component: ReviewPage,
 });

@@ -100,7 +100,11 @@ export const Route = createFileRoute("/app/notes")({
         name: "description",
         content: "Generate detailed study notes with examples, MCQs and interview questions on any topic.",
       },
+      { property: "og:title", content: "Notes Generator — CodeMate AI" },
+      { property: "og:description", content: "Generate detailed study notes with examples, MCQs and interview questions on any topic." },
+      { property: "og:url", content: canonicalUrl("/app/notes") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/notes") }],
   }),
   component: NotesPage,
 });

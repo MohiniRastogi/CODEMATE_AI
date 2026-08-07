@@ -11,6 +11,7 @@ export const Route = createFileRoute("/app/saved")({
     meta: [
       { title: "Saved — CodeMate AI" },
       { name: "description", content: "Your bookmarked programs, notes, projects and interview questions." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: SavedPage,

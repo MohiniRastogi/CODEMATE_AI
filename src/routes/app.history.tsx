@@ -11,6 +11,7 @@ export const Route = createFileRoute("/app/history")({
     meta: [
       { title: "History — CodeMate AI" },
       { name: "description", content: "Everything you've generated with CodeMate AI, all in one place." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: HistoryPage,

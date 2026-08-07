@@ -10,6 +10,7 @@ export const Route = createFileRoute("/app/settings")({
     meta: [
       { title: "Settings — CodeMate AI" },
       { name: "description", content: "App preferences, theme and about." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: SettingsPage,

@@ -26,7 +26,9 @@ export const Route = createFileRoute("/app/interview")({
         property: "og:description",
         content: "Role-based programming interview questions with model answers, examples, tips and follow-ups.",
       },
+      { property: "og:url", content: canonicalUrl("/app/interview") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/interview") }],
   }),
   component: InterviewPage,
 });
