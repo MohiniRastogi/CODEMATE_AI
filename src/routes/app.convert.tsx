@@ -18,7 +18,14 @@ export const Route = createFileRoute("/app/convert")({
         name: "description",
         content: "Translate code between languages with AI-powered explanations of the differences.",
       },
+      { property: "og:title", content: "Code Converter — CodeMate AI" },
+      {
+        property: "og:description",
+        content: "Translate code between languages with AI-powered explanations of the differences.",
+      },
+      { property: "og:url", content: canonicalUrl("/app/convert") },
     ],
+    links: [{ rel: "canonical", href: canonicalUrl("/app/convert") }],
   }),
   component: ConvertPage,
 });
