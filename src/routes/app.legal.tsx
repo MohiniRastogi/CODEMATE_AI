@@ -43,13 +43,16 @@ export const Route = createFileRoute("/app/legal")({
     const doc = DOCS[resolveDoc(match.search?.doc)];
     const title = `${doc.name} — CodeMate AI`;
     const description = `${doc.name} for CodeMate AI, the AI-powered developer toolkit.`;
+    const url = canonicalUrl(`/app/legal?doc=${resolveDoc(match.search?.doc)}`);
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:url", content: url },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   component: LegalPage,
