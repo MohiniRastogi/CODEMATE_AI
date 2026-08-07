@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { FeatureShell, GradientButton, SectionCard } from "@/components/FeatureShell";
 import { UTILS, UTIL_CATEGORIES, resolveUtil, type UtilSlug } from "@/lib/devtools";
+import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/app/utils")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -13,13 +14,18 @@ export const Route = createFileRoute("/app/utils")({
     const tool = resolveUtil(match.search?.tool);
     const title = `${tool.name} — Developer Utilities | CodeMate AI`;
     const description = `Free online ${tool.name}. Fast, private developer utilities that run entirely in your browser.`;
+    const url = canonicalUrl(
+      match.search?.tool ? `/app/utils?tool=${tool.slug}` : "/app/utils",
+    );
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:url", content: url },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   component: UtilsPage,
