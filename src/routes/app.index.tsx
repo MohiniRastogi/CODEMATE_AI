@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Search,
   Sparkles,
@@ -19,7 +19,7 @@ import {
   GraduationCap,
   Lock,
 } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
 import { FEATURED_LANGUAGES, LANGUAGE_CONFIGS } from "@/lib/languages";
 import { UTILS } from "@/lib/devtools";
@@ -215,6 +215,9 @@ function HomeInner() {
   const [tip, setTip] = useState(tips[0]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const navigate = useNavigate();
+  const listRef = useRef<HTMLDivElement>(null);
 
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
@@ -232,6 +235,47 @@ function HomeInner() {
     );
     return { tools, languages, utils, total: tools.length + languages.length + utils.length };
   }, [q]);
+
+  const flatResults = useMemo(
+    () => [
+      ...results.tools.map((t) => ({ to: t.to as string, search: undefined as unknown })),
+      ...results.languages.map((l) => ({ to: "/app/program", search: { language: l.slug } as unknown })),
+      ...results.utils.map((u) => ({ to: "/app/utils", search: { tool: u.slug } as unknown })),
+    ],
+    [results],
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [q]);
+
+  useEffect(() => {
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-result-index="${activeIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!searching || flatResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % flatResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + flatResults.length) % flatResults.length);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setActiveIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActiveIndex(flatResults.length - 1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const target = flatResults[activeIndex];
+      if (target) navigate({ to: target.to, search: target.search } as never);
+    } else if (e.key === "Escape") {
+      setQuery("");
+    }
+  };
 
   useEffect(() => {
     setHistory(storage.getHistory());
@@ -267,8 +311,13 @@ function HomeInner() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onSearchKeyDown}
             placeholder="Search tools…"
             aria-label="Search tools"
+            role="combobox"
+            aria-expanded={searching}
+            aria-controls="tool-search-results"
+            aria-activedescendant={searching && flatResults.length > 0 ? `tool-result-${activeIndex}` : undefined}
             className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-subtitle"
           />
           {searching && (
@@ -292,13 +341,23 @@ function HomeInner() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-5" id="tool-search-results" ref={listRef}>
+                <p className="sr-only" aria-live="polite">
+                  {flatResults.length} results. Use arrow keys to navigate and Enter to open.
+                </p>
                 {results.tools.length > 0 && (
                   <div>
                     <SectionHeading>AI Tools</SectionHeading>
                     <div className="grid grid-cols-1 gap-2">
-                      {results.tools.map((t) => (
-                        <Link key={t.title} to={t.to} className={resultClass}>
+                      {results.tools.map((t, i) => (
+                        <Link
+                          key={t.title}
+                          to={t.to}
+                          id={`tool-result-${i}`}
+                          data-result-index={i}
+                          onMouseEnter={() => setActiveIndex(i)}
+                          className={`${resultClass}${activeIndex === i ? " ring-2 ring-ring" : ""}`}
+                        >
                           <span className="text-sm font-semibold text-foreground">
                             <Highlight text={t.title} query={q} />
                           </span>
@@ -314,8 +373,18 @@ function HomeInner() {
                   <div>
                     <SectionHeading>Generators</SectionHeading>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {results.languages.map((l) => (
-                        <Link key={l.slug} to="/app/program" search={{ language: l.slug }} className={resultClass}>
+                      {results.languages.map((l, i) => {
+                        const idx = results.tools.length + i;
+                        return (
+                        <Link
+                          key={l.slug}
+                          to="/app/program"
+                          search={{ language: l.slug }}
+                          id={`tool-result-${idx}`}
+                          data-result-index={idx}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          className={`${resultClass}${activeIndex === idx ? " ring-2 ring-ring" : ""}`}
+                        >
                           <span className="text-sm font-semibold text-foreground">
                             <span aria-hidden="true">{l.emoji}</span> <Highlight text={`${l.name} Generator`} query={q} />
                           </span>
@@ -323,7 +392,8 @@ function HomeInner() {
                             <Highlight text={l.desc} query={q} />
                           </span>
                         </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -331,8 +401,18 @@ function HomeInner() {
                   <div>
                     <SectionHeading>Utilities</SectionHeading>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {results.utils.map((u) => (
-                        <Link key={u.slug} to="/app/utils" search={{ tool: u.slug }} className={resultClass}>
+                      {results.utils.map((u, i) => {
+                        const idx = results.tools.length + results.languages.length + i;
+                        return (
+                        <Link
+                          key={u.slug}
+                          to="/app/utils"
+                          search={{ tool: u.slug }}
+                          id={`tool-result-${idx}`}
+                          data-result-index={idx}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          className={`${resultClass}${activeIndex === idx ? " ring-2 ring-ring" : ""}`}
+                        >
                           <span className="text-sm font-semibold text-foreground">
                             <Highlight text={u.name} query={q} />
                           </span>
@@ -340,7 +420,8 @@ function HomeInner() {
                             <Highlight text={u.category} query={q} />
                           </span>
                         </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
