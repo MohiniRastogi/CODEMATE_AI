@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Search,
   Sparkles,
@@ -19,7 +19,7 @@ import {
   GraduationCap,
   Lock,
 } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
 import { FEATURED_LANGUAGES, LANGUAGE_CONFIGS } from "@/lib/languages";
 import { UTILS } from "@/lib/devtools";
@@ -215,6 +215,9 @@ function HomeInner() {
   const [tip, setTip] = useState(tips[0]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const navigate = useNavigate();
+  const listRef = useRef<HTMLDivElement>(null);
 
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
@@ -232,6 +235,47 @@ function HomeInner() {
     );
     return { tools, languages, utils, total: tools.length + languages.length + utils.length };
   }, [q]);
+
+  const flatResults = useMemo(
+    () => [
+      ...results.tools.map((t) => ({ to: t.to as string, search: undefined as unknown })),
+      ...results.languages.map((l) => ({ to: "/app/program", search: { language: l.slug } as unknown })),
+      ...results.utils.map((u) => ({ to: "/app/utils", search: { tool: u.slug } as unknown })),
+    ],
+    [results],
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [q]);
+
+  useEffect(() => {
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-result-index="${activeIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!searching || flatResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % flatResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + flatResults.length) % flatResults.length);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setActiveIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActiveIndex(flatResults.length - 1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const target = flatResults[activeIndex];
+      if (target) navigate({ to: target.to, search: target.search } as never);
+    } else if (e.key === "Escape") {
+      setQuery("");
+    }
+  };
 
   useEffect(() => {
     setHistory(storage.getHistory());
