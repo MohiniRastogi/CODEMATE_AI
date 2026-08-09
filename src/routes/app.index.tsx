@@ -192,6 +192,24 @@ const tips = [
 
 
 function Home() {
+  return <HomeInner />;
+}
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rounded bg-primary/15 px-0.5 text-primary">{text.slice(idx, idx + q.length)}</mark>
+      <Highlight text={text.slice(idx + q.length)} query={q} />
+    </>
+  );
+}
+
+function HomeInner() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [tip, setTip] = useState(tips[0]);
@@ -281,8 +299,12 @@ function Home() {
                     <div className="grid grid-cols-1 gap-2">
                       {results.tools.map((t) => (
                         <Link key={t.title} to={t.to} className={resultClass}>
-                          <span className="text-sm font-semibold text-foreground">{t.title}</span>
-                          <span className="text-xs leading-snug text-subtitle">{t.desc}</span>
+                          <span className="text-sm font-semibold text-foreground">
+                            <Highlight text={t.title} query={q} />
+                          </span>
+                          <span className="text-xs leading-snug text-subtitle">
+                            <Highlight text={t.desc} query={q} />
+                          </span>
                         </Link>
                       ))}
                     </div>
@@ -295,9 +317,11 @@ function Home() {
                       {results.languages.map((l) => (
                         <Link key={l.slug} to="/app/program" search={{ language: l.slug }} className={resultClass}>
                           <span className="text-sm font-semibold text-foreground">
-                            <span aria-hidden="true">{l.emoji}</span> {l.name} Generator
+                            <span aria-hidden="true">{l.emoji}</span> <Highlight text={`${l.name} Generator`} query={q} />
                           </span>
-                          <span className="text-xs leading-snug text-subtitle">{l.desc}</span>
+                          <span className="text-xs leading-snug text-subtitle">
+                            <Highlight text={l.desc} query={q} />
+                          </span>
                         </Link>
                       ))}
                     </div>
@@ -309,8 +333,12 @@ function Home() {
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {results.utils.map((u) => (
                         <Link key={u.slug} to="/app/utils" search={{ tool: u.slug }} className={resultClass}>
-                          <span className="text-sm font-semibold text-foreground">{u.name}</span>
-                          <span className="text-xs leading-snug text-subtitle">{u.category}</span>
+                          <span className="text-sm font-semibold text-foreground">
+                            <Highlight text={u.name} query={q} />
+                          </span>
+                          <span className="text-xs leading-snug text-subtitle">
+                            <Highlight text={u.category} query={q} />
+                          </span>
                         </Link>
                       ))}
                     </div>
