@@ -17,7 +17,7 @@ function getPrismLanguage(language: string) {
     plain: "text",
     plaintext: "text",
   };
-  return aliases[normalized] ?? normalized || "text";
+  return aliases[normalized] ?? (normalized || "text");
 }
 
 export function CodeBlock({ code, language = "text" }: { code: string; language?: string }) {
