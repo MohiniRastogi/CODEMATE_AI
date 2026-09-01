@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { SITE_URL } from "@/lib/seo";
 import { LANGUAGE_CONFIGS } from "@/lib/languages";
-import { UTILS } from "@/lib/devtools";
+
 
 interface SitemapEntry {
   path: string;
@@ -27,17 +27,11 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/app/convert", changefreq: "weekly", priority: "0.9", lastmod: CONTENT_LASTMOD },
           { path: "/app/notes", changefreq: "weekly", priority: "0.9", lastmod: CONTENT_LASTMOD },
           { path: "/app/interview", changefreq: "weekly", priority: "0.9", lastmod: CONTENT_LASTMOD },
-          { path: "/app/utils", changefreq: "monthly", priority: "0.7", lastmod: CONTENT_LASTMOD },
+          
           ...LANGUAGE_CONFIGS.map((l) => ({
             path: `/app/program?language=${l.slug}`,
             changefreq: "monthly" as const,
             priority: "0.8",
-            lastmod: CONTENT_LASTMOD,
-          })),
-          ...UTILS.map((u) => ({
-            path: `/app/utils?tool=${u.slug}`,
-            changefreq: "monthly" as const,
-            priority: "0.6",
             lastmod: CONTENT_LASTMOD,
           })),
           { path: "/app/legal?doc=privacy", changefreq: "yearly", priority: "0.3", lastmod: CONTENT_LASTMOD },

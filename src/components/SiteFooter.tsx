@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
 import { FEATURED_LANGUAGES } from "@/lib/languages";
-import { UTILS } from "@/lib/devtools";
 import { LogoMark } from "@/components/Logo";
 
 const AI_TOOLS = [
@@ -21,7 +20,7 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-10 border-t border-border pt-8" aria-labelledby="footer-title">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-7 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-7 md:grid-cols-3">
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2">
             <LogoMark className="size-8" />
@@ -55,15 +54,6 @@ export function SiteFooter() {
           ))}
         </FooterColumn>
 
-        <FooterColumn title="Developer Utilities">
-          {UTILS.map((u) => (
-            <li key={u.slug}>
-              <Link to="/app/utils" search={{ tool: u.slug }} className={linkClass}>
-                {u.name}
-              </Link>
-            </li>
-          ))}
-        </FooterColumn>
       </div>
 
       <div className="mt-8 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
