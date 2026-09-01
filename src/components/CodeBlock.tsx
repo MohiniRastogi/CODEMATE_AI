@@ -4,9 +4,26 @@ import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/lib/theme";
 
+function getPrismLanguage(language: string) {
+  const normalized = language.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    "c++": "cpp",
+    "c#": "csharp",
+    js: "javascript",
+    ts: "typescript",
+    golang: "go",
+    html: "markup",
+    xml: "markup",
+    plain: "text",
+    plaintext: "text",
+  };
+  return aliases[normalized] ?? (normalized || "text");
+}
+
 export function CodeBlock({ code, language = "text" }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
   const { mode } = useTheme();
+  const prismLanguage = getPrismLanguage(language);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -32,7 +49,7 @@ export function CodeBlock({ code, language = "text" }: { code: string; language?
       </div>
       <div className="max-h-[500px] overflow-auto text-sm">
         <SyntaxHighlighter
-          language={language}
+           language={prismLanguage}
           style={mode === "dark" ? oneDark : oneLight}
           customStyle={{
             margin: 0,

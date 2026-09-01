@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeftRight, Sparkles, Copy, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { convertCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
@@ -32,20 +32,62 @@ export const Route = createFileRoute("/app/convert")({
 });
 
 const LANGS = ["Python", "Java", "JavaScript", "C", "C++", "C#", "Go", "Rust", "PHP", "TypeScript"];
+type ConvertInput = { fromLanguage: string; toLanguage: string; code: string };
+type ConvertResult = { convertedCode: string; explanation: string; languageDifferences: string[] };
 
 function ConvertPage() {
   const [from, setFrom] = useState("Python");
   const [to, setTo] = useState("JavaScript");
   const [code, setCode] = useState("");
+  const [visibleResult, setVisibleResult] = useState<ConvertResult | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const requestIdRef = useRef(0);
   const fn = useServerFn(convertCode);
   const mutation = useMutation({
-    mutationFn: (i: { fromLanguage: string; toLanguage: string; code: string }) => fn({ data: i }),
-    onError: (e: Error) => toast.error(e.message),
-    onSuccess: (data) =>
-      storage.addHistory({ kind: "convert", title: `${from} → ${to}`, data }),
+    mutationFn: ({ input }: { input: ConvertInput; requestId: number }) => fn({ data: input }),
+    onError: (e: Error, variables) => {
+      if (variables.requestId !== requestIdRef.current) return;
+      setIsConverting(false);
+      setRequestError(e.message || "AI request failed");
+      toast.error(e.message || "AI request failed");
+    },
+    onSuccess: (data, variables) => {
+      if (variables.requestId !== requestIdRef.current) return;
+      setVisibleResult(data);
+      setIsConverting(false);
+      setRequestError(null);
+      storage.addHistory({
+        kind: "convert",
+        title: `${variables.input.fromLanguage} → ${variables.input.toLanguage}`,
+        data,
+      });
+    },
   });
 
-  const result = mutation.data;
+  const clearForLanguageChange = () => {
+    requestIdRef.current += 1;
+    setVisibleResult(null);
+    setRequestError(null);
+    setIsConverting(false);
+    mutation.reset();
+  };
+
+  const run = () => {
+    if (!code.trim()) {
+      toast.error("Paste some code first");
+      return;
+    }
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setVisibleResult(null);
+    setRequestError(null);
+    setIsConverting(true);
+    mutation.reset();
+    mutation.mutate({ input: { fromLanguage: from, toLanguage: to, code }, requestId });
+  };
+
+  const result = visibleResult;
 
   return (
     <FeatureShell
@@ -60,7 +102,10 @@ function ConvertPage() {
             <span className="mb-1.5 block text-xs font-medium text-subtitle">From</span>
             <select
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => {
+                clearForLanguageChange();
+                setFrom(e.target.value);
+              }}
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground"
             >
               {LANGS.map((l) => (
@@ -72,7 +117,10 @@ function ConvertPage() {
             <span className="mb-1.5 block text-xs font-medium text-subtitle">To</span>
             <select
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                clearForLanguageChange();
+                setTo(e.target.value);
+              }}
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground"
             >
               {LANGS.map((l) => (
@@ -94,22 +142,24 @@ function ConvertPage() {
         <div className="mt-4">
           <GradientButton
             gradient="gradient-sky"
-            onClick={() =>
-              code.trim()
-                ? mutation.mutate({ fromLanguage: from, toLanguage: to, code })
-                : toast.error("Paste some code first")
-            }
-            disabled={mutation.isPending}
+            onClick={run}
+            disabled={isConverting}
           >
             <Sparkles className="h-4 w-4" />
-            {mutation.isPending ? "Converting..." : "Convert Code"}
+            {isConverting ? "Converting..." : "Convert Code"}
           </GradientButton>
         </div>
       </div>
 
-      {mutation.isPending && (
+      {isConverting && (
         <div className="mt-5">
           <LoadingShimmer lines={8} />
+        </div>
+      )}
+
+      {requestError && (
+        <div className="mt-5 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-foreground">
+          {requestError}
         </div>
       )}
 
@@ -120,11 +170,11 @@ function ConvertPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="min-w-0">
                 <p className="mb-1 text-xs font-medium text-subtitle">Source · {from}</p>
-                <CodeBlock code={code} language={from.toLowerCase()} />
+                 <CodeBlock code={code} language={from} />
               </div>
               <div className="min-w-0">
                 <p className="mb-1 text-xs font-medium text-subtitle">Converted · {to}</p>
-                <CodeBlock code={result.convertedCode} language={to.toLowerCase()} />
+                 <CodeBlock code={result.convertedCode} language={to} />
               </div>
             </div>
           </SectionCard>
