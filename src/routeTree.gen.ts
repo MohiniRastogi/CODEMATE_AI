@@ -14,7 +14,6 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppUtilsRouteImport } from './routes/app.utils'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppSavedRouteImport } from './routes/app.saved'
 import { Route as AppReviewRouteImport } from './routes/app.review'
@@ -49,11 +48,6 @@ const IndexRoute = IndexRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppUtilsRoute = AppUtilsRouteImport.update({
-  id: '/utils',
-  path: '/utils',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -122,7 +116,6 @@ export interface FileRoutesByFullPath {
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
-  '/app/utils': typeof AppUtilsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -139,7 +132,6 @@ export interface FileRoutesByTo {
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
-  '/app/utils': typeof AppUtilsRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -158,7 +150,6 @@ export interface FileRoutesById {
   '/app/review': typeof AppReviewRoute
   '/app/saved': typeof AppSavedRoute
   '/app/settings': typeof AppSettingsRoute
-  '/app/utils': typeof AppUtilsRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -178,7 +169,6 @@ export interface FileRouteTypes {
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
-    | '/app/utils'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -195,7 +185,6 @@ export interface FileRouteTypes {
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
-    | '/app/utils'
     | '/app'
   id:
     | '__root__'
@@ -213,7 +202,6 @@ export interface FileRouteTypes {
     | '/app/review'
     | '/app/saved'
     | '/app/settings'
-    | '/app/utils'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -259,13 +247,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/utils': {
-      id: '/app/utils'
-      path: '/utils'
-      fullPath: '/app/utils'
-      preLoaderRoute: typeof AppUtilsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/settings': {
@@ -352,7 +333,6 @@ interface AppRouteChildren {
   AppReviewRoute: typeof AppReviewRoute
   AppSavedRoute: typeof AppSavedRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppUtilsRoute: typeof AppUtilsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -367,7 +347,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppReviewRoute: AppReviewRoute,
   AppSavedRoute: AppSavedRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppUtilsRoute: AppUtilsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
