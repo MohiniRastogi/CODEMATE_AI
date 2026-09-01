@@ -11,7 +11,7 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { generateProgram } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
@@ -68,6 +68,23 @@ const VARIANT_LABELS: Record<Variant, string> = {
   optimizedCode: "Optimized",
 };
 
+type ProgramInput = { language: string; difficulty: string; prompt: string };
+type ProgramResult = {
+  productionCode: string;
+  beginnerCode: string;
+  optimizedCode: string;
+  lineByLine: string[];
+  explanation: string;
+  timeComplexity: string;
+  spaceComplexity: string;
+  exampleInput: string;
+  exampleOutput: string;
+  edgeCases: string[];
+  bestPractices: string[];
+  commonMistakes: string[];
+  relatedConcepts: string[];
+};
+
 function ProgramPage() {
   const { language: languageParam } = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -76,34 +93,62 @@ function ProgramPage() {
   const [difficulty, setDifficulty] = useState("Easy");
   const [prompt, setPrompt] = useState("");
   const [variant, setVariant] = useState<Variant>("productionCode");
+  const [visibleResult, setVisibleResult] = useState<ProgramResult | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const requestIdRef = useRef(0);
   const fn = useServerFn(generateProgram);
 
-  // Keep the selection in sync when arriving from a language card.
+  const mutation = useMutation({
+    mutationFn: ({ input }: { input: ProgramInput; requestId: number }) => fn({ data: input }),
+    onError: (e: Error, variables) => {
+      if (variables.requestId !== requestIdRef.current) return;
+      setIsGenerating(false);
+      setRequestError(e.message || "AI request failed");
+      toast.error(e.message || "AI request failed");
+    },
+    onSuccess: (data, variables) => {
+      if (variables.requestId !== requestIdRef.current) return;
+      setVisibleResult(data);
+      setIsGenerating(false);
+      setRequestError(null);
+      storage.addHistory({
+        kind: "program",
+        title: variables.input.prompt.slice(0, 60) || `${variables.input.language} program`,
+        data: { ...variables.input, result: data },
+      });
+    },
+  });
+
+  const clearForLanguageChange = () => {
+    requestIdRef.current += 1;
+    setVisibleResult(null);
+    setRequestError(null);
+    setIsGenerating(false);
+    setVariant("productionCode");
+    mutation.reset();
+  };
+
+  // Keep the selection in sync when arriving from a language card or a query change.
   useEffect(() => {
+    clearForLanguageChange();
     setLanguage(selected.name);
   }, [selected.name]);
 
   const active = resolveLanguage(language);
 
-  const mutation = useMutation({
-    mutationFn: (input: { language: string; difficulty: string; prompt: string }) =>
-      fn({ data: input }),
-    onError: (e: Error) => toast.error(e.message || "AI request failed"),
-    onSuccess: (data) => {
-      storage.addHistory({
-        kind: "program",
-        title: prompt.slice(0, 60) || `${language} program`,
-        data: { language, difficulty, prompt, result: data },
-      });
-    },
-  });
-
   const run = () => {
     if (!prompt.trim()) return toast.error("Describe what you want to build.");
-    mutation.mutate({ language, difficulty, prompt });
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setVisibleResult(null);
+    setRequestError(null);
+    setIsGenerating(true);
+    mutation.reset();
+    mutation.mutate({ input: { language, difficulty, prompt }, requestId });
   };
 
-  const result = mutation.data;
+  const result = visibleResult;
   const activeCode = result ? result[variant] : "";
 
   const copy = async (text: string) => {
@@ -129,9 +174,11 @@ function ProgramPage() {
             <select
               value={language}
               onChange={(e) => {
-                setLanguage(e.target.value);
+                const nextLanguage = resolveLanguage(e.target.value);
+                clearForLanguageChange();
+                setLanguage(nextLanguage.name);
                 navigate({
-                  search: { language: resolveLanguage(e.target.value).slug },
+                  search: { language: nextLanguage.slug },
                   replace: true,
                 });
               }}
@@ -175,7 +222,7 @@ function ProgramPage() {
         <div className="mt-4">
           <GradientButton onClick={run} disabled={mutation.isPending}>
             <Sparkles className="h-4 w-4" />
-            {mutation.isPending ? "Generating..." : "Generate Code"}
+             {isGenerating ? "Generating..." : "Generate Code"}
           </GradientButton>
         </div>
       </div>
@@ -186,9 +233,9 @@ function ProgramPage() {
         </div>
       )}
 
-      {mutation.isError && (
+      {requestError && (
         <div className="mt-5">
-          <ErrorCard message={(mutation.error as Error)?.message} onRetry={run} />
+          <ErrorCard message={requestError} onRetry={run} />
         </div>
       )}
 
@@ -225,7 +272,7 @@ function ProgramPage() {
                 </button>
               ))}
             </div>
-            <CodeBlock code={activeCode} language={language.toLowerCase()} />
+             <CodeBlock code={activeCode} language={active.slug} />
             <div className="mt-3 grid grid-cols-2 gap-2">
               <ActionButton icon={Copy} label="Copy code" onClick={() => copy(activeCode)} />
               <ActionButton
