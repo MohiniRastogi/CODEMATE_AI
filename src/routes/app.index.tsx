@@ -22,7 +22,7 @@ import {
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { storage, type HistoryItem } from "@/lib/storage";
 import { FEATURED_LANGUAGES, LANGUAGE_CONFIGS } from "@/lib/languages";
-import { UTILS } from "@/lib/devtools";
+
 import { SiteFooter } from "@/components/SiteFooter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SampleOutput } from "@/components/SampleOutput";
@@ -223,24 +223,20 @@ function HomeInner() {
   const searching = q.length > 0;
 
   const results = useMemo(() => {
-    if (!q) return { tools: [], languages: [], utils: [], total: 0 };
+    if (!q) return { tools: [], languages: [], total: 0 };
     const tools = TOOLS.filter(
       (t) => t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.languages.toLowerCase().includes(q),
     );
     const languages = LANGUAGE_CONFIGS.filter(
       (l) => l.name.toLowerCase().includes(q) || l.slug.includes(q) || l.desc.toLowerCase().includes(q),
     );
-    const utils = UTILS.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.slug.includes(q) || u.category.toLowerCase().includes(q),
-    );
-    return { tools, languages, utils, total: tools.length + languages.length + utils.length };
+    return { tools, languages, total: tools.length + languages.length };
   }, [q]);
 
   const flatResults = useMemo(
     () => [
       ...results.tools.map((t) => ({ to: t.to as string, search: undefined as unknown })),
       ...results.languages.map((l) => ({ to: "/app/program", search: { language: l.slug } as unknown })),
-      ...results.utils.map((u) => ({ to: "/app/utils", search: { tool: u.slug } as unknown })),
     ],
     [results],
   );
@@ -390,34 +386,6 @@ function HomeInner() {
                           </span>
                           <span className="text-xs leading-snug text-subtitle">
                             <Highlight text={l.desc} query={q} />
-                          </span>
-                        </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {results.utils.length > 0 && (
-                  <div>
-                    <SectionHeading>Utilities</SectionHeading>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {results.utils.map((u, i) => {
-                        const idx = results.tools.length + results.languages.length + i;
-                        return (
-                        <Link
-                          key={u.slug}
-                          to="/app/utils"
-                          search={{ tool: u.slug }}
-                          id={`tool-result-${idx}`}
-                          data-result-index={idx}
-                          onMouseEnter={() => setActiveIndex(idx)}
-                          className={`${resultClass}${activeIndex === idx ? " ring-2 ring-ring" : ""}`}
-                        >
-                          <span className="text-sm font-semibold text-foreground">
-                            <Highlight text={u.name} query={q} />
-                          </span>
-                          <span className="text-xs leading-snug text-subtitle">
-                            <Highlight text={u.category} query={q} />
                           </span>
                         </Link>
                         );
