@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { streamText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import { createGateway, DEFAULT_MODEL } from "./ai-gateway.server";
 
@@ -37,6 +37,8 @@ const commonSchema = {
     browserTests: z.array(z.object({ name: z.string(), code: z.string() })),
   }),
   review: z.object({
+    summary: z.string(),
+    score: z.number(),
     overallScore: z.number(),
     codeQuality: z.number(),
     performance: z.number(),
@@ -48,7 +50,12 @@ const commonSchema = {
     bugs: z.array(z.object({ issue: z.string(), why: z.string(), fix: z.string() })),
     logicErrors: z.array(z.string()),
     syntaxErrors: z.array(z.string()),
+    securityConcerns: z.array(z.string()),
+    performanceIssues: z.array(z.string()),
+    codeQualityIssues: z.array(z.string()),
+    recommendations: z.array(z.string()),
     suggestions: z.array(z.string()),
+    detectedLanguage: z.string(),
     optimizedCode: z.string(),
     fixedCode: z.string(),
     bestPractices: z.array(z.string()),
@@ -95,12 +102,13 @@ async function runStructured<T extends z.ZodTypeAny>(
 ): Promise<z.infer<T>> {
   const gateway = createGateway();
   try {
-    const { output } = await generateText({
+    const result = streamText({
       model: gateway(DEFAULT_MODEL),
       output: Output.object({ schema }),
       system,
       prompt,
     });
+    const output = await result.output;
     return output as z.infer<T>;
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
@@ -114,11 +122,10 @@ async function runStructured<T extends z.ZodTypeAny>(
       try {
         return JSON.parse(candidate) as z.infer<T>;
       } catch {
-        console.error("[runStructured] Failed to parse AI response:", raw);
+        console.error("[runStructured] AI returned an invalid structured response");
         throw new Error("AI returned an invalid response. Please try again.");
       }
     }
-    console.error("[runStructured] AI call failed:", error);
     throw error;
   }
 }
@@ -234,28 +241,46 @@ Return { path, content }. Keep the same path. content must be the complete file 
   });
 
 // Code Reviewer
+const MAX_REVIEW_CODE_LENGTH = 30000;
+const reviewInputSchema = z.object({
+  code: z.string().trim().min(1, "Paste some code first").max(MAX_REVIEW_CODE_LENGTH, "Code is too large to review"),
+  language: z.string().trim().max(40).optional(),
+});
+
 export const reviewCode = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string; language?: string }) => d)
+  .inputValidator((d: unknown) => reviewInputSchema.parse(d))
   .handler(async ({ data }) => {
-    return runStructured(
-      commonSchema.review,
-      `Review this ${data.language ?? "code"} rigorously:
+    try {
+      return await runStructured(
+        commonSchema.review,
+        `Review this ${data.language ?? "code"} rigorously. If no language is supplied, infer it from the source.
 
 \`\`\`
 ${data.code}
 \`\`\`
 
-Score each dimension 0-100 (codeQuality, performance, readability, security, maintainability, complexity, optimization) and set overallScore.
+Return structured review data. Set score and overallScore to the same integer from 0-100. Include a concise overall summary and the detected language.
+- securityConcerns: concrete security risks only (empty if none).
+- performanceIssues: concrete performance concerns only (empty if none).
+- codeQualityIssues: concrete quality/readability concerns only (empty if none).
+- recommendations and suggestions: practical improvements.
 - bugs: for EVERY defect return { issue, why, fix } explaining why it is wrong and exactly how it was corrected.
 - logicErrors: incorrect behaviour / wrong results (empty array if none).
 - syntaxErrors: code that will not compile or parse (empty array if none).
-- suggestions: concrete optimization suggestions.
 - fixedCode: the original code with all bugs corrected.
 - optimizedCode: the best-performing rewrite.
 - bestPractices: 4-6 items.`,
 
-      "You are a strict, senior code reviewer. Be honest, specific and educational.",
-    );
+        "You are an expert software engineer and code reviewer. Analyze the submitted source code carefully. Identify actual bugs and potential problems without inventing issues. Review security, correctness, performance, readability, maintainability, and best practices. Explain findings clearly for a developer. Give practical recommendations. If suggesting replacement code, preserve the intended functionality. Return only the requested structured data.",
+      );
+    } catch (error) {
+      const status =
+        error && typeof error === "object" && "statusCode" in error
+          ? String((error as { statusCode?: unknown }).statusCode)
+          : "unknown";
+      console.error(`[reviewCode] AI service request failed (${status})`);
+      throw new Error("AI review service is currently unavailable. Please try again later.");
+    }
   });
 
 // Notes Generator
