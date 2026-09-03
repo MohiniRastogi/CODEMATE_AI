@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { streamText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import { createGateway, DEFAULT_MODEL } from "./ai-gateway.server";
 
@@ -37,6 +37,8 @@ const commonSchema = {
     browserTests: z.array(z.object({ name: z.string(), code: z.string() })),
   }),
   review: z.object({
+    summary: z.string(),
+    score: z.number(),
     overallScore: z.number(),
     codeQuality: z.number(),
     performance: z.number(),
@@ -48,7 +50,12 @@ const commonSchema = {
     bugs: z.array(z.object({ issue: z.string(), why: z.string(), fix: z.string() })),
     logicErrors: z.array(z.string()),
     syntaxErrors: z.array(z.string()),
+    securityConcerns: z.array(z.string()),
+    performanceIssues: z.array(z.string()),
+    codeQualityIssues: z.array(z.string()),
+    recommendations: z.array(z.string()),
     suggestions: z.array(z.string()),
+    detectedLanguage: z.string(),
     optimizedCode: z.string(),
     fixedCode: z.string(),
     bestPractices: z.array(z.string()),
@@ -95,12 +102,13 @@ async function runStructured<T extends z.ZodTypeAny>(
 ): Promise<z.infer<T>> {
   const gateway = createGateway();
   try {
-    const { output } = await generateText({
+    const result = streamText({
       model: gateway(DEFAULT_MODEL),
       output: Output.object({ schema }),
       system,
       prompt,
     });
+    const output = await result.output;
     return output as z.infer<T>;
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
@@ -114,11 +122,10 @@ async function runStructured<T extends z.ZodTypeAny>(
       try {
         return JSON.parse(candidate) as z.infer<T>;
       } catch {
-        console.error("[runStructured] Failed to parse AI response:", raw);
+        console.error("[runStructured] AI returned an invalid structured response");
         throw new Error("AI returned an invalid response. Please try again.");
       }
     }
-    console.error("[runStructured] AI call failed:", error);
     throw error;
   }
 }
