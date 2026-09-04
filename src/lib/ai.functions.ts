@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { streamText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
-import { createGateway, DEFAULT_MODEL } from "./ai-gateway.server";
+import {
+  AiGatewayError,
+  createGateway,
+  DEFAULT_MODEL,
+  runCodeReviewWithGateway,
+} from "./ai-gateway.server";
 
 const commonSchema = {
   program: z.object({
@@ -247,13 +252,57 @@ const reviewInputSchema = z.object({
   language: z.string().trim().max(40).optional(),
 });
 
+const reviewJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "summary", "score", "overallScore", "codeQuality", "performance", "readability",
+    "security", "maintainability", "complexity", "optimization", "bugs", "logicErrors",
+    "syntaxErrors", "securityConcerns", "performanceIssues", "codeQualityIssues",
+    "recommendations", "suggestions", "detectedLanguage", "optimizedCode", "fixedCode",
+    "bestPractices",
+  ],
+  properties: {
+    summary: { type: "string" },
+    score: { type: "number" },
+    overallScore: { type: "number" },
+    codeQuality: { type: "number" },
+    performance: { type: "number" },
+    readability: { type: "number" },
+    security: { type: "number" },
+    maintainability: { type: "number" },
+    complexity: { type: "number" },
+    optimization: { type: "number" },
+    bugs: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["issue", "why", "fix"],
+        properties: { issue: { type: "string" }, why: { type: "string" }, fix: { type: "string" } },
+      },
+    },
+    logicErrors: { type: "array", items: { type: "string" } },
+    syntaxErrors: { type: "array", items: { type: "string" } },
+    securityConcerns: { type: "array", items: { type: "string" } },
+    performanceIssues: { type: "array", items: { type: "string" } },
+    codeQualityIssues: { type: "array", items: { type: "string" } },
+    recommendations: { type: "array", items: { type: "string" } },
+    suggestions: { type: "array", items: { type: "string" } },
+    detectedLanguage: { type: "string" },
+    optimizedCode: { type: "string" },
+    fixedCode: { type: "string" },
+    bestPractices: { type: "array", items: { type: "string" } },
+  },
+} satisfies Record<string, unknown>;
+
 export const reviewCode = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => reviewInputSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      return await runStructured(
-        commonSchema.review,
-        `Review this ${data.language ?? "code"} rigorously. If no language is supplied, infer it from the source.
+      const raw = await runCodeReviewWithGateway(
+        "You are an expert software engineer and code reviewer. Analyze submitted source code carefully. Identify actual bugs and potential problems without inventing issues. Review security, correctness, performance, readability, maintainability, and best practices. Explain findings clearly for a developer. Give practical recommendations. If suggesting replacement code, preserve the intended functionality. Return only the requested structured data.",
+        `Review this ${data.language || "code"} rigorously. If no language is supplied, infer it from the source.
 
 \`\`\`
 ${data.code}
@@ -270,15 +319,16 @@ Return structured review data. Set score and overallScore to the same integer fr
 - fixedCode: the original code with all bugs corrected.
 - optimizedCode: the best-performing rewrite.
 - bestPractices: 4-6 items.`,
-
-        "You are an expert software engineer and code reviewer. Analyze the submitted source code carefully. Identify actual bugs and potential problems without inventing issues. Review security, correctness, performance, readability, maintainability, and best practices. Explain findings clearly for a developer. Give practical recommendations. If suggesting replacement code, preserve the intended functionality. Return only the requested structured data.",
+        reviewJsonSchema,
       );
+      return commonSchema.review.parse(JSON.parse(raw));
     } catch (error) {
-      const status =
-        error && typeof error === "object" && "statusCode" in error
-          ? String((error as { statusCode?: unknown }).statusCode)
-          : "unknown";
+      const status = error instanceof AiGatewayError ? error.status : "invalid-response";
       console.error(`[reviewCode] AI service request failed (${status})`);
+      if (error instanceof AiGatewayError) throw new Error(error.message);
+      if (error instanceof z.ZodError || error instanceof SyntaxError) {
+        throw new Error("AI review returned an unexpected response. Please try again.");
+      }
       throw new Error("AI review service is currently unavailable. Please try again later.");
     }
   });
