@@ -41,10 +41,11 @@ export const Route = createFileRoute("/app/review")({
 
 function ReviewPage() {
   const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("");
   const [showDiff, setShowDiff] = useState(false);
   const fn = useServerFn(reviewCode);
   const mutation = useMutation({
-    mutationFn: (input: { code: string }) => fn({ data: input }),
+    mutationFn: (input: { code: string; language?: string }) => fn({ data: input }),
     onError: (e: Error) => toast.error(e.message),
     onSuccess: (data) => storage.addHistory({ kind: "review", title: `Score: ${data.overallScore}`, data }),
   });
@@ -86,6 +87,19 @@ function ReviewPage() {
       gradient="gradient-green"
     >
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+        <label className="mb-4 block">
+          <span className="mb-1.5 block text-xs font-medium text-subtitle">Language (optional)</span>
+          <select
+            value={language}
+            onChange={(event) => setLanguage(event.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          >
+            <option value="">Auto-detect</option>
+            {["JavaScript", "TypeScript", "Python", "Java", "C", "C++", "C#", "HTML", "CSS", "SQL", "PHP", "Other"].map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-subtitle">Paste your code</span>
           <textarea
@@ -99,11 +113,11 @@ function ReviewPage() {
         <div className="mt-4">
           <GradientButton
             gradient="gradient-green"
-            onClick={() => (code.trim() ? mutation.mutate({ code }) : toast.error("Paste some code first"))}
+            onClick={() => (code.trim() ? mutation.mutate({ code, language: language || undefined }) : toast.error("Paste some code first"))}
             disabled={mutation.isPending}
           >
             <Sparkles className="h-4 w-4" />
-            {mutation.isPending ? "Reviewing..." : "Review Code"}
+            {mutation.isPending ? "Reviewing Code..." : "Review Code"}
           </GradientButton>
         </div>
       </div>
@@ -116,13 +130,19 @@ function ReviewPage() {
 
       {mutation.isError && (
         <div className="mt-5">
-          <ErrorCard message={(mutation.error as Error)?.message} onRetry={() => mutation.mutate({ code })} />
+          <ErrorCard message={(mutation.error as Error)?.message} onRetry={() => mutation.mutate({ code, language: language || undefined })} />
         </div>
       )}
 
       {result && (
         <FeatureErrorBoundary onReset={() => mutation.mutate({ code })}>
         <div className="mt-5 space-y-4">
+          <SectionCard title="Overall Assessment">
+            <p className="text-sm leading-relaxed text-foreground">{result.summary}</p>
+            {result.detectedLanguage && (
+              <p className="mt-2 text-xs text-subtitle">Detected language: {result.detectedLanguage}</p>
+            )}
+          </SectionCard>
           <div className="rounded-3xl gradient-green p-6 text-center text-white shadow-lift">
             <p className="text-xs font-medium uppercase tracking-wide opacity-90">Overall Score</p>
             <p className="mt-1 text-6xl font-bold">{result.overallScore}</p>
@@ -165,6 +185,24 @@ function ReviewPage() {
               <Bar label="Optimization" value={result.optimization} />
             </div>
           </SectionCard>
+
+          {[
+            ["Security Concerns", result.securityConcerns],
+            ["Performance Issues", result.performanceIssues],
+            ["Code Quality Issues", result.codeQualityIssues],
+          ].map(([title, items]) =>
+            Array.isArray(items) && items.length > 0 ? (
+              <SectionCard key={title as string} title={title as string}>
+                <ul className="space-y-2">
+                  {items.map((item, index) => (
+                    <li key={index} className="flex gap-2 text-sm text-foreground">
+                      <span className="text-warning">•</span>{item}
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            ) : null,
+          )}
 
           {((result.logicErrors ?? []).length > 0 || (result.syntaxErrors ?? []).length > 0) && (
             <SectionCard title="Detected Errors">
@@ -322,7 +360,7 @@ function ReviewPage() {
             <ActionButton
               icon={RefreshCw}
               label="Re-review"
-              onClick={() => mutation.mutate({ code })}
+              onClick={() => mutation.mutate({ code, language: language || undefined })}
             />
           </div>
         </div>
