@@ -1,36 +1,33 @@
-# Improve Notes Generator AI output quality
+# Fix MCQ/Flashcard Options Not Rendering
 
-## What changes
+## Root cause
+In `src/routes/app.notes.tsx`, MCQ options are rendered with `toText(o)`. The AI is not strictly required to return options as plain strings, so it sometimes returns option objects (e.g. `{ "option": "...", "isCorrect": true }` or letter-keyed shapes). `toText` doesn't recognize those keys and returns `""`, so the option list renders blank while the question and answer checkmark still appear. The server function `generateNotes` in `src/lib/ai.functions.ts` (secure server-side function, not a user-facing edge function) also doesn't enforce "exactly 4 plain-string options" in its prompt.
 
-### 1. Stronger AI prompt + richer structure (server-side, `src/lib/ai.functions.ts`)
+## Changes
 
-The Notes Generator calls Lovable's managed AI from a secure server function (the credential stays server-side; nothing changes there). Only the prompt and response shape change.
+### 1. Server: stricter MCQ contract (`src/lib/ai.functions.ts`)
+- Update the `generateNotes` prompt to require each MCQ as strict JSON:
+  `{ "question": "...", "options": ["option A", "option B", "option C", "option D"], "answer": "option B" }`
+  with exactly 4 plain-string options (no letter prefixes, no objects) and `answer` exactly equal to one of the options.
 
-Update the `generateNotes` prompt and system instruction so every note follows one consistent, teacher-quality format:
+### 2. Frontend: robust option normalization (`src/routes/app.notes.tsx`)
+- Add a `normalizeMcq(m)` helper that converts any AI shape into `{ question: string; options: string[]; answer: string }`:
+  - Accept options as an array of strings or objects (pull the first string field from keys like `text`, `value`, `label`, `option`, `content`).
+  - Accept options as a letter-keyed object (`{ A: ..., B: ... }`) by taking its values in order.
+  - Accept a single string by splitting on newlines if it contains multiple lines.
+  - Extend `toText`'s recognized keys to include `option` and `answer`.
+- Use `normalizeMcq` in both the list view and the `Flashcards` mapping.
 
-- **One-line definition** first, then a thorough explanation organized with markdown `##`/`###` subheadings inside the explanation field.
-- **Key concepts** explained in simple language, with **bold** key terms.
-- **Examples** that include a short code snippet where relevant (markdown fenced code blocks).
-- New **Common pitfalls** section — things people get wrong (replaces guesswork with a dedicated field).
-- **Numbered steps** for any process/sequence.
-- **Length matched to complexity** — no filler for simple topics, no oversimplifying complex ones.
-- **Consistent structure every time** — the prompt will spell out the exact section order.
+### 3. Error handling for invalid options
+- After normalization, if every MCQ has fewer than 2 valid options, show a clear inline error card ("The AI returned MCQs without valid answer options — please regenerate") with a Retry button, instead of silently rendering questions with no options.
+- Skip individual MCQs with fewer than 2 options (don't render a question with no choices).
 
-Schema additions (kept backward-compatible so saved/history notes keep rendering): add `keyConcepts` (array of `{ term, explanation }`) and `pitfalls` (array of strings). All existing fields (definition, explanation, examples, advantages, disadvantages, interview questions, MCQs, summary) stay, with upgraded prompt guidance for depth.
+### 4. Flashcard mode consistency
+- In Flashcard mode, MCQ cards always show the (normalized) options list and flip only to reveal the answer — the existing flip behavior is preserved, but now with guaranteed non-empty options.
 
-### 2. Markdown rendering in the UI (`src/routes/app.notes.tsx`)
+### 5. Verify
+- Confirm the build passes.
+- Live test: generate notes for a topic (e.g. "Binary Search Tree") and confirm all 4 options render as clickable/selectable items in both list and Flashcard modes, with the answer reveal working.
 
-- Add a small `Markdown` component using the already-installed `react-markdown` (no new dependency), rendering headings, bold, bullet/numbered lists, and fenced code via the existing `CodeBlock` component for syntax highlighting.
-- Render `definition`, `explanation`, `examples`, and `summary` through it so `##` headings, `**bold**`, lists, and code blocks display formatted instead of as raw text.
-- Add new "Key Concepts" (term + explanation cards) and "Common Pitfalls" sections to the results layout, matching existing card styling — no design changes.
-- Update the Export `.md` builder to include the new Key Concepts and Pitfalls sections.
-
-### 3. Verify
-
-- Generate notes for a simple topic and a complex one; confirm consistent structure, markdown renders correctly, and export works.
-- Confirm saved-notes page and history still render older notes without errors (schema is additive only).
-
-## Technical notes
-
-- Files touched: `src/lib/ai.functions.ts` (prompt + schema), `src/routes/app.notes.tsx` (rendering + export). No new packages; `react-markdown` is already in `package.json`.
-- No changes to routing, theming, or other tools.
+## Out of scope
+- No changes to the notes prompt's other sections, the rejected markdown-quality redesign, or any other page/styling.
