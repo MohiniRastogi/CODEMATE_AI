@@ -341,7 +341,11 @@ export const generateNotes = createServerFn({ method: "POST" })
       commonSchema.notes,
       `Create comprehensive study notes on: "${data.topic}".
 
-Include clear definition, thorough explanation, 3-5 examples (plain strings), advantages, disadvantages, 5 interview Q&A, 4 MCQs with 4 options each and the correct answer, and a summary.`,
+Include clear definition, thorough explanation, 3-5 examples (plain strings), advantages, disadvantages, 5 interview Q&A, 4 MCQs, and a summary.
+
+MCQ FORMAT IS STRICT — every MCQ must be exactly:
+{ "question": "...", "options": ["option A", "option B", "option C", "option D"], "answer": "option B" }
+Rules: exactly 4 options; each option is a PLAIN STRING (never an object, never prefixed with "A." / "B)" letters); "answer" must be exactly equal to one of the options strings.`,
       "You are a computer science professor creating high-quality student notes.",
     );
   });
