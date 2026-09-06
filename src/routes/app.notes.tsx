@@ -24,7 +24,7 @@ function toText(v: Unknown): string {
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v)) return v.map(toText).filter(Boolean).join(", ");
   if (isPlainObject(v)) {
-    for (const k of ["text", "value", "description", "content", "label", "name"]) {
+    for (const k of ["text", "value", "description", "content", "label", "name", "option", "answer"]) {
       if (typeof v[k] === "string") return v[k] as string;
     }
     return "";
