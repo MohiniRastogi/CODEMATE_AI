@@ -92,6 +92,33 @@ function SafeValue({ value }: { value: Unknown }): ReactNode {
   return null;
 }
 
+type Mcq = { question: string; options: string[]; answer: string };
+
+/** Normalizes any AI MCQ shape into { question, options, answer } with plain-string options. */
+function normalizeMcq(m: unknown): Mcq {
+  const obj = isPlainObject(m) ? m : {};
+  const question = toText(obj.question ?? m);
+  const answer = toText(obj.answer ?? obj.correctAnswer ?? obj.correct_answer);
+  let raw: unknown = obj.options ?? obj.choices ?? obj.answers;
+  let list: unknown[] = [];
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (isPlainObject(raw)) {
+    // Letter-keyed object like { A: "...", B: "..." } — take values in key order.
+    list = Object.keys(raw)
+      .sort()
+      .map((k) => (raw as Record<string, unknown>)[k]);
+  } else if (typeof raw === "string" && raw.includes("\n")) {
+    list = raw.split("\n");
+  } else if (raw != null && raw !== "") {
+    list = [raw];
+  }
+  const options = list
+    .map((o) => toText(o).replace(/^[A-Da-d][.)]\s*/, "").trim())
+    .filter(Boolean);
+  return { question, options, answer };
+}
+
 export const Route = createFileRoute("/app/notes")({
   head: () => ({
     meta: [
@@ -272,7 +299,28 @@ function NotesPage() {
               </div>
             </SectionCard>
           )}
-          {(result.mcqs ?? []).length > 0 && (
+          {(result.mcqs ?? []).length > 0 &&
+            (() => {
+              const mcqs = (result.mcqs ?? [])
+                .map((m) => normalizeMcq(m))
+                .filter((m) => m.question && m.options.length >= 2);
+              if (mcqs.length === 0) {
+                return (
+                  <div className="rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-foreground">
+                    <p className="font-medium">MCQ options could not be displayed.</p>
+                    <p className="mt-1 text-subtitle">
+                      The AI returned questions without valid answer options. Please regenerate the notes.
+                    </p>
+                    <button
+                      onClick={() => topic.trim() && mutation.mutate({ topic })}
+                      className="mt-3 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium"
+                    >
+                      Regenerate
+                    </button>
+                  </div>
+                );
+              }
+              return (
             <SectionCard
               title="MCQs"
               action={
@@ -289,30 +337,24 @@ function NotesPage() {
               }
             >
               {flashcards ? (
-                <Flashcards
-                  cards={(result.mcqs ?? []).map((m) => ({
-                    question: toText(m?.question),
-                    options: (m?.options ?? []).map((o) => toText(o)),
-                    answer: toText(m?.answer),
-                  }))}
-                />
+                <Flashcards cards={mcqs} />
               ) : (
               <div className="space-y-4">
-                {(result.mcqs ?? []).map((m, i) => (
+                {mcqs.map((m, i) => (
                   <div key={i} className="rounded-xl border border-border p-3">
                     <p className="text-sm font-medium text-foreground">
-                      {i + 1}. {toText(m?.question)}
+                      {i + 1}. {m.question}
                     </p>
                     <ul className="mt-2 space-y-1">
-                      {(m?.options ?? []).map((o, j) => (
+                      {m.options.map((o, j) => (
                         <li key={j} className="text-sm text-subtitle">
-                          • {toText(o)}
+                          {String.fromCharCode(65 + j)}. {o}
                         </li>
                       ))}
                     </ul>
-                    {m?.answer != null && (
+                    {m.answer && (
                       <p className="mt-2 text-xs font-semibold text-success">
-                        Answer: {toText(m.answer)}
+                        Answer: {m.answer}
                       </p>
                     )}
                   </div>
@@ -320,7 +362,8 @@ function NotesPage() {
               </div>
               )}
             </SectionCard>
-          )}
+              );
+            })()}
           {result.summary && (
             <SectionCard title="Summary">
               <p className="text-sm leading-relaxed text-foreground">{toText(result.summary)}</p>
