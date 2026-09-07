@@ -367,7 +367,7 @@ Produce idiomatic ${data.toLanguage} and return a strict JSON object with these 
 - explanation: a clear prose explanation of what changed and why.
 - languageDifferences: 3-5 concise differences relevant to this conversion.
 
-The convertedCode field is required and must never be empty. For example, Python print("hello") should produce JavaScript code such as console.log("hello") in convertedCode, while the explanation belongs only in explanation.",
+The convertedCode field is required and must never be empty. For example, Python print("hello") should produce JavaScript code such as console.log("hello") in convertedCode, while the explanation belongs only in explanation.`,
       "You are a polyglot programmer expert in language translation. Follow the requested JSON structure exactly and preserve the source program's behavior.",
     );
     const parsed = commonSchema.convert.safeParse(result);
