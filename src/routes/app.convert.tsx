@@ -49,11 +49,20 @@ function ConvertPage() {
     onError: (e: Error, variables) => {
       if (variables.requestId !== requestIdRef.current) return;
       setIsConverting(false);
-      setRequestError(e.message || "AI request failed");
-      toast.error(e.message || "AI request failed");
+      setVisibleResult(null);
+      const message = e.message || "Conversion failed, please try again";
+      setRequestError(message);
+      toast.error(message);
     },
     onSuccess: (data, variables) => {
       if (variables.requestId !== requestIdRef.current) return;
+      if (typeof data.convertedCode !== "string" || !data.convertedCode.trim()) {
+        setVisibleResult(null);
+        setIsConverting(false);
+        setRequestError("Conversion failed, please try again");
+        toast.error("Conversion failed, please try again");
+        return;
+      }
       setVisibleResult(data);
       setIsConverting(false);
       setRequestError(null);
@@ -195,9 +204,14 @@ function ConvertPage() {
           </SectionCard>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(result.convertedCode);
-                toast.success("Copied");
+              onClick={async () => {
+                if (!result.convertedCode.trim()) {
+                  setRequestError("Conversion failed, please try again");
+                  toast.error("Conversion failed, please try again");
+                  return;
+                }
+                await navigator.clipboard.writeText(result.convertedCode);
+                toast.success("Copied converted code");
               }}
               className="flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface py-3 text-sm font-medium text-foreground shadow-soft"
             >
@@ -205,6 +219,11 @@ function ConvertPage() {
             </button>
             <button
               onClick={async () => {
+                if (!result.convertedCode.trim()) {
+                  setRequestError("Conversion failed, please try again");
+                  toast.error("Conversion failed, please try again");
+                  return;
+                }
                 try {
                   await navigator.share?.({ title: "CodeMate AI", text: result.convertedCode });
                 } catch {
