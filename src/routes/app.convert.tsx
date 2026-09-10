@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowLeftRight, Sparkles, Copy, Share2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { convertCode } from "@/lib/ai.functions";
 import { storage } from "@/lib/storage";
 import { FeatureShell, GradientButton, LoadingShimmer, SectionCard } from "@/components/FeatureShell";
@@ -33,7 +34,15 @@ export const Route = createFileRoute("/app/convert")({
 
 const LANGS = ["Python", "Java", "JavaScript", "C", "C++", "C#", "Go", "Rust", "PHP", "TypeScript"];
 type ConvertInput = { fromLanguage: string; toLanguage: string; code: string };
-type ConvertResult = { convertedCode: string; explanation: string; languageDifferences: string[] };
+const convertResponseSchema = z.object({
+  convertedCode: z.string().trim().min(1),
+  explanation: z.string().trim().min(1),
+  languageDifferences: z.array(z.string()),
+  contentType: z.literal("application/json"),
+});
+type ConvertResult = z.infer<typeof convertResponseSchema>;
+
+const CONVERSION_ERROR = "Conversion failed: the AI returned an unexpected response. Please try again.";
 
 function ConvertPage() {
   const [from, setFrom] = useState("Python");
@@ -44,32 +53,46 @@ function ConvertPage() {
   const [isConverting, setIsConverting] = useState(false);
   const requestIdRef = useRef(0);
   const fn = useServerFn(convertCode);
+  const failConversion = (requestId: number, message = CONVERSION_ERROR) => {
+    if (requestId !== requestIdRef.current) return;
+    setIsConverting(false);
+    setVisibleResult(null);
+    setRequestError(message);
+    toast.error(message);
+  };
   const mutation = useMutation({
     mutationFn: ({ input }: { input: ConvertInput; requestId: number }) => fn({ data: input }),
     onError: (e: Error, variables) => {
-      if (variables.requestId !== requestIdRef.current) return;
-      setIsConverting(false);
-      setVisibleResult(null);
-      const message = e.message || "Conversion failed, please try again";
-      setRequestError(message);
-      toast.error(message);
+      console.error("[CodeConverter] request failed", {
+        requestId: variables.requestId,
+        message: e.message,
+      });
+      failConversion(variables.requestId, e.message || "Conversion failed, please try again");
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (rawData, variables) => {
       if (variables.requestId !== requestIdRef.current) return;
-      if (typeof data.convertedCode !== "string" || !data.convertedCode.trim()) {
-        setVisibleResult(null);
-        setIsConverting(false);
-        setRequestError("Conversion failed, please try again");
-        toast.error("Conversion failed, please try again");
+      const parsed = convertResponseSchema.safeParse(rawData);
+      if (!parsed.success) {
+        console.error("[CodeConverter] malformed response", {
+          requestId: variables.requestId,
+          issues: parsed.error.issues,
+          rawData,
+        });
+        failConversion(variables.requestId);
         return;
       }
-      setVisibleResult(data);
+      console.info("[CodeConverter] response", {
+        requestId: variables.requestId,
+        contentType: parsed.data.contentType,
+        convertedCode: parsed.data.convertedCode,
+      });
+      setVisibleResult(parsed.data);
       setIsConverting(false);
       setRequestError(null);
       storage.addHistory({
         kind: "convert",
         title: `${variables.input.fromLanguage} → ${variables.input.toLanguage}`,
-        data,
+        data: parsed.data,
       });
     },
   });
@@ -93,7 +116,9 @@ function ConvertPage() {
     setRequestError(null);
     setIsConverting(true);
     mutation.reset();
-    mutation.mutate({ input: { fromLanguage: from, toLanguage: to, code }, requestId });
+    const input = { fromLanguage: from, toLanguage: to, code };
+    console.info("[CodeConverter] request", { requestId, ...input });
+    mutation.mutate({ input, requestId });
   };
 
   const result = visibleResult;
@@ -105,7 +130,13 @@ function ConvertPage() {
       icon={ArrowLeftRight}
       gradient="gradient-sky"
     >
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+      <form
+        className="rounded-3xl border border-border bg-surface p-5 shadow-soft"
+        onSubmit={(event) => {
+          event.preventDefault();
+          run();
+        }}
+      >
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-subtitle">From</span>
@@ -151,14 +182,14 @@ function ConvertPage() {
         <div className="mt-4">
           <GradientButton
             gradient="gradient-sky"
-            onClick={run}
             disabled={isConverting}
+            type="submit"
           >
             <Sparkles className="h-4 w-4" />
             {isConverting ? "Converting..." : "Convert Code"}
           </GradientButton>
         </div>
-      </div>
+      </form>
 
       {isConverting && (
         <div className="mt-5">

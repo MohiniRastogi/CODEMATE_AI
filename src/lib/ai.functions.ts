@@ -352,8 +352,18 @@ Rules: exactly 4 options; each option is a PLAIN STRING (never an object, never 
 
 // Code Converter
 export const convertCode = createServerFn({ method: "POST" })
-  .inputValidator((d: { fromLanguage: string; toLanguage: string; code: string }) => d)
+  .inputValidator((d: { fromLanguage: string; toLanguage: string; code: string }) => {
+    if (!d.fromLanguage?.trim() || !d.toLanguage?.trim() || !d.code?.trim()) {
+      throw new Error("Conversion requires source language, target language, and code.");
+    }
+    return d;
+  })
   .handler(async ({ data }) => {
+    console.info("[convertCode] request", {
+      fromLanguage: data.fromLanguage,
+      toLanguage: data.toLanguage,
+      code: data.code,
+    });
     const result = await runStructured(
       commonSchema.convert,
       `Convert this ${data.fromLanguage} code to ${data.toLanguage}:
@@ -372,7 +382,12 @@ The convertedCode field is required and must never be empty. For example, Python
     );
     const parsed = commonSchema.convert.safeParse(result);
     if (!parsed.success) throw new Error("Conversion failed, please try again");
-    return parsed.data;
+    const response = { ...parsed.data, contentType: "application/json" as const };
+    console.info("[convertCode] response", {
+      contentType: response.contentType,
+      convertedCode: response.convertedCode,
+    });
+    return response;
   });
 
 // Interview
