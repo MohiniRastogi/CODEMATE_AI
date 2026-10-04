@@ -52,7 +52,7 @@ async def main() -> None:
                 body='{"contentType":"application/json","explanation":"oops"}',
             )
 
-        await page.route(re.compile("_serverFn") if False else re.compile("_serverFn")  # placeholder/*_serverFn*", malformed)
+        await page.route(re.compile("_serverFn"), malformed)
         await page.get_by_role("button", name="Convert Code").click()
         panel = page.get_by_test_id("conversion-error-panel")
         await panel.wait_for(timeout=15_000)
@@ -63,7 +63,7 @@ async def main() -> None:
         await panel.screenshot(path=str(ERROR_SCREENSHOT))
 
         # Retry after removing the interception should succeed again.
-        await page.unroute("**/*_serverFn*")
+        await page.unroute(re.compile("_serverFn"))
         await panel.get_by_role("button", name="Try again").click()
         await page.get_by_text("Converted · JavaScript").wait_for(timeout=30_000)
         assert await panel.count() == 0, "error panel should be gone after successful retry"
