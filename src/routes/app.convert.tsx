@@ -44,24 +44,27 @@ type ConvertResult = z.infer<typeof convertResponseSchema>;
 
 const CONVERSION_ERROR = "Conversion failed: the AI returned an unexpected response. Please try again.";
 
-/** Maps zod validation issues on the AI response to short, user-friendly reasons. */
-function describeResponseIssues(issues: z.ZodIssue[]): string[] {
-  const reasons = new Set<string>();
+/** Maps a failed validation of the AI response to short, user-friendly reasons. */
+function describeBadResponse(rawData: unknown, issues: z.ZodIssue[]): string[] {
   for (const issue of issues) {
     const field = issue.path.join(".");
-    if (field.includes("convertedCode")) {
-      reasons.add("The AI did not return any converted code for your input.");
-    } else if (field.includes("explanation")) {
-      reasons.add("The AI response was missing the conversion explanation.");
-    } else if (field.includes("languageDifferences")) {
-      reasons.add("The AI response had an invalid language-differences list.");
-    } else if (field.includes("contentType")) {
-      reasons.add("The response was not valid structured JSON.");
-    } else {
-      reasons.add("The response had an unexpected format.");
-    }
+    if (field.includes("convertedCode")) return ["The AI did not return any converted code for your input."];
+    if (field.includes("explanation")) return ["The AI response was missing the conversion explanation."];
+    if (field.includes("languageDifferences"))
+      return ["The AI response had an invalid language-differences list."];
+    if (field.includes("contentType")) return ["The response was not valid structured JSON."];
   }
-  return [...reasons];
+  if (typeof rawData !== "object" || rawData === null) {
+    return ["The response was not valid structured JSON."];
+  }
+  const data = rawData as Record<string, unknown>;
+  const reasons: string[] = [];
+  const code = typeof data.convertedCode === "string" ? data.convertedCode.trim() : "";
+  if (!code) reasons.push("The AI did not return any converted code for your input.");
+  const explanation = typeof data.explanation === "string" ? data.explanation.trim() : "";
+  if (!explanation) reasons.push("The AI response was missing the conversion explanation.");
+  if (data.contentType !== "application/json") reasons.push("The response was not valid structured JSON.");
+  return reasons.length > 0 ? reasons : ["The response had an unexpected format."];
 }
 
 type ConversionError = { message: string; reasons: string[] };
