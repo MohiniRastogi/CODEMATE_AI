@@ -124,15 +124,17 @@ async function runStructured<T extends z.ZodTypeAny>(
         .trim();
       const match = cleaned.match(/\{[\s\S]*\}/);
       const candidate = match ? match[0] : cleaned;
+      let parsedJson: unknown;
       try {
-        const parsed = schema.safeParse(JSON.parse(candidate));
-        if (parsed.success) return parsed.data;
-        console.error("[runStructured] AI response did not match the expected structure");
-        throw new Error("AI returned an incomplete response. Please try again.");
+        parsedJson = JSON.parse(candidate);
       } catch {
         console.error("[runStructured] AI returned an invalid structured response");
         throw new Error("AI returned an invalid response. Please try again.");
       }
+      const parsed = schema.safeParse(parsedJson);
+      if (parsed.success) return parsed.data;
+      console.error("[runStructured] AI response did not match the expected structure");
+      throw new Error("AI returned an incomplete response. Please try again.");
     }
     throw error;
   }
