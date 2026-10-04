@@ -6,6 +6,7 @@ from playwright.async_api import async_playwright
 
 BASE_URL = "http://localhost:8080"
 SCREENSHOT = Path("/tmp/browser/converter-e2e.png")
+ERROR_SCREENSHOT = Path("/tmp/browser/converter-e2e-error-panel.png")
 
 
 async def main() -> None:
@@ -42,9 +43,34 @@ async def main() -> None:
         assert copied.strip(), "converted Copy button copied empty text"
         assert "console.log" in copied, copied
 
+        # Malformed-response scenario: intercept the server fn and return a payload
+        # with no convertedCode. The error panel must show the validated reason.
+        async def malformed(route):
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body='{"contentType":"application/json","explanation":"oops"}',
+            )
+
+        await page.route("**/*_serverFn*", malformed)
+        await page.get_by_role("button", name="Convert Code").click()
+        panel = page.get_by_test_id("conversion-error-panel")
+        await panel.wait_for(timeout=15_000)
+        panel_text = await panel.inner_text()
+        assert "Conversion failed" in panel_text, panel_text
+        assert "did not return any converted code" in panel_text, panel_text
+        assert "Try again" in panel_text, panel_text
+        await panel.screenshot(path=str(ERROR_SCREENSHOT))
+
+        # Retry after removing the interception should succeed again.
+        await page.unroute("**/*_serverFn*")
+        await panel.get_by_role("button", name="Try again").click()
+        await page.get_by_text("Converted · JavaScript").wait_for(timeout=30_000)
+        assert await panel.count() == 0, "error panel should be gone after successful retry"
+
         SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
         await page.screenshot(path=str(SCREENSHOT))
-        print("converter e2e passed: converted code rendered and copied")
+        print("converter e2e passed: converted code rendered and copied; error panel shows validated reason and retry works")
         await browser.close()
 
 
