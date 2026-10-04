@@ -121,11 +121,11 @@ function ConvertPage() {
   const [isConverting, setIsConverting] = useState(false);
   const requestIdRef = useRef(0);
   const fn = useServerFn(convertCode);
-  const failConversion = (requestId: number, message = CONVERSION_ERROR) => {
+  const failConversion = (requestId: number, message = CONVERSION_ERROR, reasons: string[] = []) => {
     if (requestId !== requestIdRef.current) return;
     setIsConverting(false);
     setVisibleResult(null);
-    setRequestError(message);
+    setRequestError({ message, reasons });
     toast.error(message);
   };
   const mutation = useMutation({
