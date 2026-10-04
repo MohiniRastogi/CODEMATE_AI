@@ -141,12 +141,14 @@ function ConvertPage() {
       if (variables.requestId !== requestIdRef.current) return;
       const parsed = convertResponseSchema.safeParse(rawData);
       if (!parsed.success) {
+        const reasons = describeResponseIssues(parsed.error.issues);
         console.error("[CodeConverter] malformed response", {
           requestId: variables.requestId,
           issues: parsed.error.issues,
+          reasons,
           rawData,
         });
-        failConversion(variables.requestId);
+        failConversion(variables.requestId, CONVERSION_ERROR, reasons);
         return;
       }
       console.info("[CodeConverter] response", {
