@@ -330,7 +330,10 @@ function ConvertPage() {
             <button
               onClick={async () => {
                 if (!result.convertedCode.trim()) {
-                  setRequestError("Conversion failed, please try again");
+                  setRequestError({
+                    message: "Conversion failed, please try again",
+                    reasons: ["The converted code panel is empty."],
+                  });
                   toast.error("Conversion failed, please try again");
                   return;
                 }
