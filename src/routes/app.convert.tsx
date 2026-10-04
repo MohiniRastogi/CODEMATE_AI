@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeftRight, Sparkles, Copy, Share2 } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, RefreshCw, Sparkles, Copy, Share2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -44,20 +44,91 @@ type ConvertResult = z.infer<typeof convertResponseSchema>;
 
 const CONVERSION_ERROR = "Conversion failed: the AI returned an unexpected response. Please try again.";
 
+/** Maps a failed validation of the AI response to short, user-friendly reasons. */
+function describeBadResponse(rawData: unknown, issues: z.ZodIssue[]): string[] {
+  for (const issue of issues) {
+    const field = issue.path.join(".");
+    if (field.includes("convertedCode")) return ["The AI did not return any converted code for your input."];
+    if (field.includes("explanation")) return ["The AI response was missing the conversion explanation."];
+    if (field.includes("languageDifferences"))
+      return ["The AI response had an invalid language-differences list."];
+    if (field.includes("contentType")) return ["The response was not valid structured JSON."];
+  }
+  if (typeof rawData !== "object" || rawData === null) {
+    return ["The response was not valid structured JSON."];
+  }
+  const data = rawData as Record<string, unknown>;
+  const reasons: string[] = [];
+  const code = typeof data.convertedCode === "string" ? data.convertedCode.trim() : "";
+  if (!code) reasons.push("The AI did not return any converted code for your input.");
+  const explanation = typeof data.explanation === "string" ? data.explanation.trim() : "";
+  if (!explanation) reasons.push("The AI response was missing the conversion explanation.");
+  if (data.contentType !== "application/json") reasons.push("The response was not valid structured JSON.");
+  return reasons.length > 0 ? reasons : ["The response had an unexpected format."];
+}
+
+type ConversionError = { message: string; reasons: string[] };
+
+/** Friendly, retryable error panel with the validated reasons the conversion failed. */
+function ConversionErrorPanel({
+  error,
+  onRetry,
+}: {
+  error: ConversionError;
+  onRetry: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="rounded-3xl border border-danger/30 bg-danger/5 p-5"
+      data-testid="conversion-error-panel"
+    >
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-danger/10 text-danger">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-foreground">Conversion failed</h3>
+          <p className="mt-1 text-sm leading-relaxed text-subtitle">{error.message}</p>
+          {error.reasons.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-danger/20 bg-surface p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-subtitle">Why this happened</p>
+              <ul className="mt-1.5 space-y-1">
+                {error.reasons.map((reason, i) => (
+                  <li key={i} className="flex gap-2 text-xs leading-relaxed text-foreground">
+                    <span className="text-danger">•</span>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <button
+            onClick={onRetry}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-soft"
+          >
+            <RefreshCw className="h-4 w-4 text-primary" /> Try again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConvertPage() {
   const [from, setFrom] = useState("Python");
   const [to, setTo] = useState("JavaScript");
   const [code, setCode] = useState("");
   const [visibleResult, setVisibleResult] = useState<ConvertResult | null>(null);
-  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<ConversionError | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const requestIdRef = useRef(0);
   const fn = useServerFn(convertCode);
-  const failConversion = (requestId: number, message = CONVERSION_ERROR) => {
+  const failConversion = (requestId: number, message = CONVERSION_ERROR, reasons: string[] = []) => {
     if (requestId !== requestIdRef.current) return;
     setIsConverting(false);
     setVisibleResult(null);
-    setRequestError(message);
+    setRequestError({ message, reasons });
     toast.error(message);
   };
   const mutation = useMutation({
@@ -73,12 +144,14 @@ function ConvertPage() {
       if (variables.requestId !== requestIdRef.current) return;
       const parsed = convertResponseSchema.safeParse(rawData);
       if (!parsed.success) {
+        const reasons = describeBadResponse(rawData, parsed.error.issues);
         console.error("[CodeConverter] malformed response", {
           requestId: variables.requestId,
           issues: parsed.error.issues,
+          reasons,
           rawData,
         });
-        failConversion(variables.requestId);
+        failConversion(variables.requestId, CONVERSION_ERROR, reasons);
         return;
       }
       console.info("[CodeConverter] response", {
@@ -198,8 +271,14 @@ function ConvertPage() {
       )}
 
       {requestError && (
-        <div className="mt-5 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-foreground">
-          {requestError}
+        <div className="mt-5">
+          <ConversionErrorPanel
+            error={requestError}
+            onRetry={() => {
+              setRequestError(null);
+              run();
+            }}
+          />
         </div>
       )}
 
@@ -237,7 +316,10 @@ function ConvertPage() {
             <button
               onClick={async () => {
                 if (!result.convertedCode.trim()) {
-                  setRequestError("Conversion failed, please try again");
+                  setRequestError({
+                    message: "Conversion failed, please try again",
+                    reasons: ["The converted code panel is empty."],
+                  });
                   toast.error("Conversion failed, please try again");
                   return;
                 }
@@ -251,7 +333,10 @@ function ConvertPage() {
             <button
               onClick={async () => {
                 if (!result.convertedCode.trim()) {
-                  setRequestError("Conversion failed, please try again");
+                  setRequestError({
+                    message: "Conversion failed, please try again",
+                    reasons: ["The converted code panel is empty."],
+                  });
                   toast.error("Conversion failed, please try again");
                   return;
                 }
