@@ -117,7 +117,7 @@ function ConvertPage() {
   const [to, setTo] = useState("JavaScript");
   const [code, setCode] = useState("");
   const [visibleResult, setVisibleResult] = useState<ConvertResult | null>(null);
-  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<ConversionError | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const requestIdRef = useRef(0);
   const fn = useServerFn(convertCode);
