@@ -58,7 +58,7 @@ async def main() -> None:
         await panel.wait_for(timeout=15_000)
         panel_text = await panel.inner_text()
         assert "Conversion failed" in panel_text, panel_text
-        assert "did not return any converted code" in panel_text, panel_text
+        assert "not valid structured JSON" in panel_text, panel_text
         assert "Try again" in panel_text, panel_text
         await panel.screenshot(path=str(ERROR_SCREENSHOT))
 
