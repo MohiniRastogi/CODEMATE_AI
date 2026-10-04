@@ -85,6 +85,43 @@ type ProgramResult = {
   relatedConcepts: string[];
 };
 
+function toStringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (typeof value === "string") {
+    return value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.values(value).filter((item): item is string => typeof item === "string");
+  }
+  return [];
+}
+
+function normalizeProgramResult(value: unknown): ProgramResult | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const productionCode = typeof raw.productionCode === "string" ? raw.productionCode : "";
+  if (!productionCode.trim()) return null;
+
+  const text = (key: string) => typeof raw[key] === "string" ? raw[key] as string : "";
+  return {
+    productionCode,
+    beginnerCode: text("beginnerCode"),
+    optimizedCode: text("optimizedCode"),
+    lineByLine: toStringList(raw.lineByLine),
+    explanation: text("explanation"),
+    timeComplexity: text("timeComplexity"),
+    spaceComplexity: text("spaceComplexity"),
+    exampleInput: text("exampleInput"),
+    exampleOutput: text("exampleOutput"),
+    edgeCases: toStringList(raw.edgeCases),
+    bestPractices: toStringList(raw.bestPractices),
+    commonMistakes: toStringList(raw.commonMistakes),
+    relatedConcepts: toStringList(raw.relatedConcepts),
+  };
+}
+
 function ProgramPage() {
   const { language: languageParam } = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -109,13 +146,21 @@ function ProgramPage() {
     },
     onSuccess: (data, variables) => {
       if (variables.requestId !== requestIdRef.current) return;
-      setVisibleResult(data);
+      const normalized = normalizeProgramResult(data);
+      if (!normalized) {
+        const message = "The generator returned an incomplete response. Please try again.";
+        setIsGenerating(false);
+        setRequestError(message);
+        toast.error(message);
+        return;
+      }
+      setVisibleResult(normalized);
       setIsGenerating(false);
       setRequestError(null);
       storage.addHistory({
         kind: "program",
         title: variables.input.prompt.slice(0, 60) || `${variables.input.language} program`,
-        data: { ...variables.input, result: data },
+        data: { ...variables.input, result: normalized },
       });
     },
   });
@@ -150,6 +195,11 @@ function ProgramPage() {
 
   const result = visibleResult;
   const activeCode = result ? result[variant] : "";
+  const lineByLine = toStringList(result?.lineByLine);
+  const bestPractices = toStringList(result?.bestPractices);
+  const commonMistakes = toStringList(result?.commonMistakes);
+  const edgeCases = toStringList(result?.edgeCases);
+  const relatedConcepts = toStringList(result?.relatedConcepts);
 
   const copy = async (text: string) => {
     try {
@@ -292,7 +342,7 @@ function ProgramPage() {
 
           <SectionCard title="Line by Line Explanation">
             <ol className="space-y-2 text-sm text-foreground">
-              {(result.lineByLine ?? []).map((l, i) => (
+              {lineByLine.map((l, i) => (
                 <li key={i} className="flex gap-3">
                   <span className="w-6 shrink-0 font-mono text-xs text-subtitle">{i + 1}.</span>
                   <span>{l}</span>
@@ -337,7 +387,7 @@ function ProgramPage() {
 
           <SectionCard title="Best Practices">
             <ul className="space-y-2">
-              {(result.bestPractices ?? []).map((b, i) => (
+              {bestPractices.map((b, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-success">✓</span>
                   {b}
@@ -348,7 +398,7 @@ function ProgramPage() {
 
           <SectionCard title="Common Mistakes">
             <ul className="space-y-2">
-              {(result.commonMistakes ?? []).map((b, i) => (
+              {commonMistakes.map((b, i) => (
                 <li key={i} className="flex gap-2 text-sm text-foreground">
                   <span className="text-danger">✗</span>
                   {b}
@@ -357,10 +407,10 @@ function ProgramPage() {
             </ul>
           </SectionCard>
 
-          {(result.edgeCases ?? []).length > 0 && (
+          {edgeCases.length > 0 && (
             <SectionCard title="Edge Cases">
               <ul className="space-y-2">
-                {(result.edgeCases ?? []).map((e, i) => (
+                {edgeCases.map((e, i) => (
                   <li key={i} className="flex gap-2 text-sm text-foreground">
                     <span className="text-primary">◆</span>
                     {e}
@@ -370,10 +420,10 @@ function ProgramPage() {
             </SectionCard>
           )}
 
-          {(result.relatedConcepts ?? []).length > 0 && (
+          {relatedConcepts.length > 0 && (
             <SectionCard title="Related Concepts">
               <div className="flex flex-wrap gap-2">
-                {(result.relatedConcepts ?? []).map((c, i) => (
+                {relatedConcepts.map((c, i) => (
                   <span key={i} className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
                     {c}
                   </span>
