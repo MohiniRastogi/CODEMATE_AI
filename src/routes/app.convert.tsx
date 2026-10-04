@@ -268,8 +268,14 @@ function ConvertPage() {
       )}
 
       {requestError && (
-        <div className="mt-5 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-sm text-foreground">
-          {requestError}
+        <div className="mt-5">
+          <ConversionErrorPanel
+            error={requestError}
+            onRetry={() => {
+              setRequestError(null);
+              run();
+            }}
+          />
         </div>
       )}
 
