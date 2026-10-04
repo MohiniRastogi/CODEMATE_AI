@@ -44,6 +44,74 @@ type ConvertResult = z.infer<typeof convertResponseSchema>;
 
 const CONVERSION_ERROR = "Conversion failed: the AI returned an unexpected response. Please try again.";
 
+/** Maps zod validation issues on the AI response to short, user-friendly reasons. */
+function describeResponseIssues(issues: z.ZodIssue[]): string[] {
+  const reasons = new Set<string>();
+  for (const issue of issues) {
+    const field = issue.path.join(".");
+    if (field.includes("convertedCode")) {
+      reasons.add("The AI did not return any converted code for your input.");
+    } else if (field.includes("explanation")) {
+      reasons.add("The AI response was missing the conversion explanation.");
+    } else if (field.includes("languageDifferences")) {
+      reasons.add("The AI response had an invalid language-differences list.");
+    } else if (field.includes("contentType")) {
+      reasons.add("The response was not valid structured JSON.");
+    } else {
+      reasons.add("The response had an unexpected format.");
+    }
+  }
+  return [...reasons];
+}
+
+type ConversionError = { message: string; reasons: string[] };
+
+/** Friendly, retryable error panel with the validated reasons the conversion failed. */
+function ConversionErrorPanel({
+  error,
+  onRetry,
+}: {
+  error: ConversionError;
+  onRetry: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="rounded-3xl border border-danger/30 bg-danger/5 p-5"
+      data-testid="conversion-error-panel"
+    >
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-danger/10 text-danger">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-foreground">Conversion failed</h3>
+          <p className="mt-1 text-sm leading-relaxed text-subtitle">{error.message}</p>
+          {error.reasons.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-danger/20 bg-surface p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-subtitle">Why this happened</p>
+              <ul className="mt-1.5 space-y-1">
+                {error.reasons.map((reason, i) => (
+                  <li key={i} className="flex gap-2 text-xs leading-relaxed text-foreground">
+                    <span className="text-danger">•</span>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <button
+            onClick={onRetry}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-soft"
+          >
+            <RefreshCw className="h-4 w-4 text-primary" /> Try again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConvertPage() {
   const [from, setFrom] = useState("Python");
   const [to, setTo] = useState("JavaScript");
