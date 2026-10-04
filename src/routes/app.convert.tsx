@@ -144,7 +144,7 @@ function ConvertPage() {
       if (variables.requestId !== requestIdRef.current) return;
       const parsed = convertResponseSchema.safeParse(rawData);
       if (!parsed.success) {
-        const reasons = describeResponseIssues(parsed.error.issues);
+        const reasons = describeBadResponse(rawData, parsed.error.issues);
         console.error("[CodeConverter] malformed response", {
           requestId: variables.requestId,
           issues: parsed.error.issues,
