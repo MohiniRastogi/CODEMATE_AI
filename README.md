@@ -4,7 +4,7 @@ Remix of 6a9f76ae-618d-48ea-bf5a-bf52d4d1a9fc
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://sunshine-mashup-lab.lovable.app
+**Live app**: https://codemateai.devorbitx.site/
 
 ## Build with Lovable
 
